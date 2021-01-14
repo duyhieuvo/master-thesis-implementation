@@ -1,0 +1,26 @@
+target/
+bin/
+*.log
+.project
+.classpath
+.settings/
+.DS_Store
+rebel.xml
+.xml/
+nb-configuration.xml
+nbactions.xml
+.ruleset~
+standalone_xml_history/
+.pmd
+.eclipse-pmd
+
+
+# NetBeans IDE #
+################
+/*/nbproject/
+
+# IntelliJ IDE #
+################
+.idea/*
+*.iml
+

@@ -1,0 +1,174 @@
+version: '2.1'
+
+services:
+  zookeeper1:
+    image: apachepulsar/pulsar-all:${PULSAR_VERSION}
+    hostname: zookeeper1
+    container_name: zookeeper1
+    ports:
+      - "12181:2181"
+    environment:
+      ZOOKEEPER_ID: 1
+      PULSAR_ZK_CONF: /custom-conf/zookeeper.conf
+    volumes:
+      - ./conf:/custom-conf
+      - ./scripts:/scripts
+    command: /bin/bash "/scripts/start_zookeeper.sh"
+
+  zookeeper2:
+    image: apachepulsar/pulsar-all:${PULSAR_VERSION}
+    hostname: zookeeper2
+    container_name: zookeeper2
+    ports:
+      - "22181:2181"
+    environment:
+      ZOOKEEPER_ID: 2
+      PULSAR_ZK_CONF: /custom-conf/zookeeper.conf
+    volumes:
+      - ./conf:/custom-conf
+      - ./scripts:/scripts
+    command: /bin/bash "/scripts/start_zookeeper.sh"
+
+  zookeeper3:
+    image: apachepulsar/pulsar-all:${PULSAR_VERSION}
+    hostname: zookeeper3
+    container_name: zookeeper3
+    ports:
+      - "32181:2181"
+    environment:
+      ZOOKEEPER_ID: 3
+      PULSAR_ZK_CONF: /custom-conf/zookeeper.conf
+    volumes:
+      - ./conf:/custom-conf
+      - ./scripts:/scripts
+    command: /bin/bash "/scripts/start_zookeeper.sh"
+
+  setup:
+    image: apachepulsar/pulsar-all:${PULSAR_VERSION}
+    hostname: setup
+    container_name: setup
+    restart: on-failure
+    volumes:
+      - ./conf:/custom-conf
+      - ./scripts:/scripts
+    command: /bin/bash "/scripts/initialize_metadata.sh"
+    depends_on:
+      - zookeeper1
+      - zookeeper2
+      - zookeeper3
+
+  bookie1:
+    image: apachepulsar/pulsar-all:${PULSAR_VERSION}
+    hostname: bookie1
+    container_name: bookie1
+    restart: on-failure
+    ports:
+      - "13181:3181"
+    environment:
+      PULSAR_BOOKKEEPER_CONF: /custom-conf/bookkeeper.conf
+    volumes:
+      - ./conf:/custom-conf
+      - ./scripts:/scripts
+    command: /bin/bash "/scripts/start_bookkeeper.sh"
+    depends_on:
+      - setup
+
+  bookie2:
+    image: apachepulsar/pulsar-all:${PULSAR_VERSION}
+    hostname: bookie2
+    container_name: bookie2
+    restart: on-failure
+    ports:
+      - "23181:3181"
+    environment:
+      PULSAR_BOOKKEEPER_CONF: /custom-conf/bookkeeper.conf
+    volumes:
+      - ./conf:/custom-conf
+      - ./scripts:/scripts
+    command: /bin/bash "/scripts/start_bookkeeper.sh"
+    depends_on:
+      - setup
+
+  bookie3:
+    image: apachepulsar/pulsar-all:${PULSAR_VERSION}
+    hostname: bookie3
+    container_name: bookie3
+    restart: on-failure
+    ports:
+      - "33181:3181"
+    environment:
+      PULSAR_BOOKKEEPER_CONF: /custom-conf/bookkeeper.conf
+    volumes:
+      - ./conf:/custom-conf
+      - ./scripts:/scripts
+    command: /bin/bash "/scripts/start_bookkeeper.sh"
+    depends_on:
+      - setup
+
+  broker1:
+    image: apachepulsar/pulsar-all:${PULSAR_VERSION}
+    hostname: broker1
+    container_name: broker1
+    restart: on-failure
+    environment:
+      PULSAR_BROKER_CONF: /custom-conf/broker.conf
+    ports:
+      - "16650:6650"
+      - "18080:8080"
+    volumes:
+      - ./conf:/custom-conf
+      - ./scripts:/scripts
+    command: /bin/bash "/scripts/start_broker.sh"
+    depends_on:
+      - bookie1
+      - bookie2
+      - bookie3
+    healthcheck:
+      test: test $$(curl -s -o /dev/null -w %{http_code}  http://localhost:8080/admin/v2/brokers/health) -eq 200 || exit 1
+      start_period: 10s
+      interval: 20s
+      timeout: 18s
+      retries: 10
+
+  broker2:
+    image: apachepulsar/pulsar-all:${PULSAR_VERSION}
+    hostname: broker2
+    container_name: broker2
+    restart: on-failure
+    environment:
+      PULSAR_BROKER_CONF: /custom-conf/broker.conf
+    ports:
+      - "26650:6650"
+      - "28080:8080"
+    volumes:
+      - ./conf:/custom-conf
+      - ./scripts:/scripts
+    command: /bin/bash "/scripts/start_broker.sh"
+    depends_on:
+      - bookie1
+      - bookie2
+      - bookie3
+    healthcheck:
+      test: test $$(curl -s -o /dev/null -w %{http_code}  http://localhost:8080/admin/v2/brokers/health) -eq 200 || exit 1
+      start_period: 10s
+      interval: 20s
+      timeout: 18s
+      retries: 10
+
+  client-cli:
+    image: apachepulsar/pulsar-all:${PULSAR_VERSION}
+    hostname: client-cli
+    container_name: client-cli
+    restart: on-failure
+    environment:
+      PULSAR_CLIENT_CONF: /custom-conf/client.conf
+    volumes:
+      - ./conf:/custom-conf
+    command: /bin/bash
+    tty: true
+    depends_on:
+      - broker1
+      - broker2
+networks:
+  default:
+    name: pulsar_network

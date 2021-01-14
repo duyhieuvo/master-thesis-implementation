@@ -1,0 +1,257 @@
+---
+version: '2'
+services:
+  zookeeper1:
+    image: confluentinc/cp-zookeeper:${VERSION_CONFLUENT}
+    hostname: zookeeper1
+    container_name: zookeeper1
+    ports:
+      - "12181:2181"
+    networks:
+      default:
+        aliases:
+          - zookeeper
+    environment:
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: zookeeper1:2888:3888;zookeeper2:2888:3888;zookeeper3:2888:3888
+  zookeeper2:
+    image: confluentinc/cp-zookeeper:${VERSION_CONFLUENT}
+    hostname: zookeeper2
+    container_name: zookeeper2
+    ports:
+      - "22181:2181"
+    networks:
+      default:
+        aliases:
+          - zookeeper
+    environment:
+      ZOOKEEPER_SERVER_ID: 2
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: zookeeper1:2888:3888;zookeeper2:2888:3888;zookeeper3:2888:3888
+  zookeeper3:
+    image: confluentinc/cp-zookeeper:${VERSION_CONFLUENT}
+    hostname: zookeeper3
+    container_name: zookeeper3
+    ports:
+      - "32181:2181"
+    networks:
+      default:
+        aliases:
+          - zookeeper
+    environment:
+      ZOOKEEPER_SERVER_ID: 3
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_INIT_LIMIT: 5
+      ZOOKEEPER_SYNC_LIMIT: 2
+      ZOOKEEPER_SERVERS: zookeeper1:2888:3888;zookeeper2:2888:3888;zookeeper3:2888:3888
+
+  kafka1:
+    image: confluentinc/cp-kafka:${VERSION_CONFLUENT}
+    hostname: kafka1
+    container_name: kafka1
+    restart: unless-stopped
+    depends_on:
+      - zookeeper1
+      - zookeeper2
+      - zookeeper3
+    ports:
+      - "19092:19092"
+    networks:
+      default:
+        aliases:
+          - kafka
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://:9092,PLAINTEXT_HOST://:19092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:9092,PLAINTEXT_HOST://localhost:19092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_NUM_PARTITIONS: 6
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_HOSTNAME: kafka1
+    healthcheck:
+      test: "(kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1) || exit 1"
+      start_period: 10s
+      interval: 30s
+      timeout: 25s
+      retries: 10
+
+
+  kafka2:
+    image: confluentinc/cp-kafka:${VERSION_CONFLUENT}
+    hostname: kafka2
+    container_name: kafka2
+    restart: unless-stopped
+    depends_on:
+      - zookeeper1
+      - zookeeper2
+      - zookeeper3
+    ports:
+      - "29092:29092"
+    networks:
+      default:
+        aliases:
+          - kafka
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP:  PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS:  PLAINTEXT://:9092,PLAINTEXT_HOST://:29092
+      KAFKA_ADVERTISED_LISTENERS:  PLAINTEXT://kafka2:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_NUM_PARTITIONS: 6
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_HOSTNAME: kafka2
+    healthcheck:
+      test: "(kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1) || exit 1"
+      start_period: 10s
+      interval: 30s
+      timeout: 25s
+      retries: 10
+
+
+  kafka3:
+    image: confluentinc/cp-kafka:${VERSION_CONFLUENT}
+    hostname: kafka3
+    container_name: kafka3
+    restart: unless-stopped
+    depends_on:
+      - zookeeper1
+      - zookeeper2
+      - zookeeper3
+    ports:
+      - "39092:39092"
+    networks:
+      default:
+        aliases:
+          - kafka
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://:9092,PLAINTEXT_HOST://:39092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka3:9092,PLAINTEXT_HOST://localhost:39092
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_NUM_PARTITIONS: 6
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_HOSTNAME: kafka3
+    healthcheck:
+      test: "(kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1) || exit 1"
+      start_period: 10s
+      interval: 30s
+      timeout: 25s
+      retries: 10
+
+
+  cli:
+    image: confluentinc/cp-kafka:${VERSION_CONFLUENT}
+    hostname: cli
+    container_name: cli
+    restart: on-failure
+    command: /bin/bash
+    tty: true
+    depends_on:
+      - kafka1
+      - kafka2
+      - kafka3
+  postgres_db:
+    image: postgres-db:latest
+    build: ./db
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+  adminer:
+    image: adminer
+    ports:
+      - "8081:8080"
+
+  event-generator:
+    build:
+      context: ./client
+    image: usecase/kafka-client:latestlocal
+    hostname: event-generator
+    container_name: event-generator
+    command: event-generator
+    volumes:
+      - ./test-data:/test-data
+    environment:
+      KAFKA_URL: "kafka:9092"
+      CONSUMER_ID: "event-generator-consumer-1"
+      GROUP_ID: "event-generator-consumer-group-1"
+      KAFKA_SOURCE_TOPIC: "raw-event"
+      OFFSET_RESET: "earliest"
+      MAX_POLL_RECORDS: 1
+      TRANSACTION_ID: "event-generator-transaction"
+      PRODUCER_ID: "event-generator-producer-1"
+      KAFKA_SINK_TOPIC: "raw-event"
+      PATH_TO_CSV: "/test-data/test_events.csv"
+
+  stream-processor:
+    build:
+      context: ./client
+    image: usecase/kafka-client:latestlocal
+    hostname: stream-processor
+    container_name: stream-processor
+    command: stream-processor
+    environment:
+      KAFKA_URL: "kafka:9092"
+      CONSUMER_ID: "stream-processor-consumer-1"
+      GROUP_ID: "stream-processor-consumer-group-1"
+      KAFKA_SOURCE_TOPIC: "raw-event"
+      OFFSET_RESET: "earliest"
+      MAX_POLL_RECORDS: 100
+      TRANSACTION_ID: "stream-processor-transaction"
+      PRODUCER_ID: "stream-processor-producer-1"
+      KAFKA_SINK_TOPIC: "transformed-event"
+
+  stream-aggregator:
+    build:
+      context: ./client
+    image: usecase/kafka-client:latestlocal
+    hostname: stream-aggregator
+    container_name: stream-aggregator
+    command: stream-aggregator
+    environment:
+      KAFKA_URL: "kafka:9092"
+      CONSUMER_ID: "stream-aggregator-consumer-1"
+      GROUP_ID: "stream-aggregator-consumer-group-1"
+      KAFKA_SOURCE_TOPIC: "transformed-event"
+      OFFSET_RESET: "earliest"
+      MAX_POLL_RECORDS: 100
+      ASSIGNED_PARTITION: "0"
+
+
+
+networks:
+  default:
+    name: kafka_network

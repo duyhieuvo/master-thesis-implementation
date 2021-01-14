@@ -1,0 +1,36 @@
+---
+version: '2.4'
+services:
+  nats-streaming-1:
+    image: nats-streaming:${VERSION_NATS_STREAMING}
+    hostname: nats-streaming-1
+    container_name: nats-streaming-1
+    volumes:
+      - ./config/server-1.conf:/config.conf
+    command: --config /config.conf
+    ports:
+      - 14222:4222
+      - 18222:8222
+  nats-streaming-2:
+    image: nats-streaming:${VERSION_NATS_STREAMING}
+    hostname: nats-streaming-2
+    container_name: nats-streaming-2
+    volumes:
+      - ./config/server-2.conf:/config.conf
+    command: --config /config.conf
+    ports:
+      - 24222:4222
+      - 28222:8222
+  nats-streaming-3:
+    image: nats-streaming:${VERSION_NATS_STREAMING}
+    hostname: nats-streaming-3
+    container_name: nats-streaming-3
+    volumes:
+      - ./config/server-3.conf:/config.conf
+    command: --config /config.conf
+    ports:
+      - 34222:4222
+      - 38222:8222
+networks:
+  default:
+    name: nats-streaming
