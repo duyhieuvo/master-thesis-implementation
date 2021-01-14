@@ -19,7 +19,7 @@ public class KafkaConsumerCreator {
         props.put(ConsumerConfig.MAX_POLL_RECORDS_CONFIG, Configuration.MAX_POLL_RECORDS);
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, Configuration.OFFSET_RESET);
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
-        props.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG,"read_uncommitted");
+        props.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG,"read_committed");
 
         KafkaConsumer<String,String> consumer = new KafkaConsumer<String, String>(props);
         return consumer;

@@ -45,7 +45,7 @@ public class KafkaEventsGenerator implements EventsPublisher {
     }
     public int getLastPublishedEvent(){
         int lastPublishedEvent = 0;
-        ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofSeconds(5));
+        ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofSeconds(15));
         if(consumerRecords.isEmpty()){
             return 0;
         }
