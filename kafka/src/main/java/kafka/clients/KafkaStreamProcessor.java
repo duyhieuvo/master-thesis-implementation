@@ -43,6 +43,7 @@ public class KafkaStreamProcessor {
 //        int i = 0;
         float value;
         String type;
+        String customerId;
         while(true) {
             ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofSeconds(10));
             try {
@@ -51,13 +52,15 @@ public class KafkaStreamProcessor {
                     JsonNode jsonNode = objectMapper.readTree(consumerRecord.value());
                     value = Float.valueOf(jsonNode.get("value").asText());
                     type = jsonNode.get("type").asText();
+                    customerId = jsonNode.get("customer").asText();
                     if (type.equals("WITHDRAW")) {
                         value = value * (-1);
                     }
                     ObjectNode transformedRecord = objectMapper.createObjectNode();
                     transformedRecord.put("id", jsonNode.get("id").asText());
+                    transformedRecord.put("customer",customerId);
                     transformedRecord.put("value", value);
-                    producerRecord = new ProducerRecord<String, String>(Configuration.KAFKA_SINK_TOPIC, "A", objectMapper.writeValueAsString(transformedRecord));
+                    producerRecord = new ProducerRecord<String, String>(Configuration.KAFKA_SINK_TOPIC, customerId, objectMapper.writeValueAsString(transformedRecord));
                     Future<RecordMetadata> recordMetadata=producer.send(producerRecord);
 
 //                    //Enforce sending records one by one instead of in batch to see the effect of read_committed to discard any record of unfinished transaction

@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import kafka.configuration.Configuration;
 
-import org.apache.kafka.clients.consumer.ConsumerRebalanceListener;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
@@ -30,6 +29,7 @@ public class KafkaAggregator {
         objectMapper = new ObjectMapper();
         currentBalanceDAO = new CurrentBalanceDAO();
 
+        //Get the list of assigned partitions
         List<Integer> assignedPartitions = Arrays.asList(Configuration.ASSIGNED_PARTITION.split(",")).stream().map(Integer::parseInt).collect(Collectors.toList());
 
         //Get current balance from the database
@@ -54,6 +54,7 @@ public class KafkaAggregator {
     public void aggregateAndWriteDataToDB(){
         float newTransactionValue;
         float newBalanceValue;
+        String customerId;
         while(true){
             Map<String,CurrentBalance> committedBalanceList = new HashMap<>();
             Map<Integer,CurrentReadingPosition> currentReadingPositionList;
@@ -61,13 +62,14 @@ public class KafkaAggregator {
             for (ConsumerRecord<String, String> consumerRecord : consumerRecords) {
                 try {
                     JsonNode jsonNode = objectMapper.readTree(consumerRecord.value());
+                    customerId = jsonNode.get("customer").asText();
 //                    System.out.println(jsonNode);
                     newTransactionValue = Float.valueOf(jsonNode.get("value").asText());
-                    newBalanceValue = newTransactionValue + customersBalances.getOrDefault("A",0.0f);
+                    newBalanceValue = newTransactionValue + customersBalances.getOrDefault(customerId,0.0f);
                     //Update the local copy of the current balance
-                    customersBalances.put("A",newBalanceValue);
+                    customersBalances.put(customerId,newBalanceValue);
                     //Update the current balance to send to the database
-                    committedBalanceList.put("A",new CurrentBalance("A",newBalanceValue,consumerRecord.partition()));
+                    committedBalanceList.put(customerId,new CurrentBalance(customerId,newBalanceValue,consumerRecord.partition()));
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
                 }

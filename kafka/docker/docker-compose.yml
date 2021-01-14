@@ -214,7 +214,7 @@ services:
       TRANSACTION_ID: "event-generator-transaction"
       PRODUCER_ID: "event-generator-producer-1"
       KAFKA_SINK_TOPIC: "raw-event"
-      PATH_TO_CSV: "/test-data/test_events.csv"
+      PATH_TO_CSV: "/test-data/test_events_multiple_customers.csv"
 
   stream-processor:
     build:

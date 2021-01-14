@@ -63,8 +63,15 @@ public class KafkaEventsGenerator implements EventsPublisher {
     @Override
     public void publishEvents(Map<String, String> event) {
         try {
+            //Get the customer ID to use as the key for records
+            String customerId = event.get("customer");
+            if(customerId==null){
+                throw new IllegalArgumentException("Customer ID is missing");
+            }
+
             String eventJson = objectMapper.writeValueAsString(event);
-            record = new ProducerRecord<String, String>(Configuration.KAFKA_SINK_TOPIC,"A", eventJson);
+
+            record = new ProducerRecord<String, String>(Configuration.KAFKA_SINK_TOPIC,customerId, eventJson);
 
             //Introduce delay between publishing
 //            long start = 0;
@@ -93,6 +100,8 @@ public class KafkaEventsGenerator implements EventsPublisher {
         } catch (InterruptedException e) {
             e.printStackTrace();
         } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (IllegalArgumentException e){
             e.printStackTrace();
         } catch(ProducerFencedException | OutOfOrderSequenceException e) {
             producer.close();
