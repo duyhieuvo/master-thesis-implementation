@@ -208,7 +208,7 @@ services:
       KAFKA_URL: "kafka:9092"
       CONSUMER_ID: "event-generator-consumer-1"
       GROUP_ID: "event-generator-consumer-group-1"
-      KAFKA_SOURCE_TOPIC: "raw-event"
+      KAFKA_SOURCE_TOPIC: "reading-position"
       OFFSET_RESET: "earliest"
       MAX_POLL_RECORDS: 1
       TRANSACTION_ID: "event-generator-transaction"
@@ -216,12 +216,12 @@ services:
       KAFKA_SINK_TOPIC: "raw-event"
       PATH_TO_CSV: "/test-data/test_events_multiple_customers.csv"
 
-  stream-processor:
+  stream-processor-1:
     build:
       context: ./client
     image: usecase/kafka-client:latestlocal
-    hostname: stream-processor
-    container_name: stream-processor
+    hostname: stream-processor-1
+    container_name: stream-processor-1
     command: stream-processor
     environment:
       KAFKA_URL: "kafka:9092"
@@ -229,7 +229,25 @@ services:
       GROUP_ID: "stream-processor-consumer-group-1"
       KAFKA_SOURCE_TOPIC: "raw-event"
       OFFSET_RESET: "earliest"
-      MAX_POLL_RECORDS: 100
+      MAX_POLL_RECORDS: 10
+      TRANSACTION_ID: "stream-processor-transaction"
+      PRODUCER_ID: "stream-processor-producer-1"
+      KAFKA_SINK_TOPIC: "transformed-event"
+
+  stream-processor-2:
+    build:
+      context: ./client
+    image: usecase/kafka-client:latestlocal
+    hostname: stream-processor-2
+    container_name: stream-processor-2
+    command: stream-processor
+    environment:
+      KAFKA_URL: "kafka:9092"
+      CONSUMER_ID: "stream-processor-consumer-2"
+      GROUP_ID: "stream-processor-consumer-group-1"
+      KAFKA_SOURCE_TOPIC: "raw-event"
+      OFFSET_RESET: "earliest"
+      MAX_POLL_RECORDS: 10
       TRANSACTION_ID: "stream-processor-transaction"
       PRODUCER_ID: "stream-processor-producer-1"
       KAFKA_SINK_TOPIC: "transformed-event"
@@ -248,7 +266,7 @@ services:
       KAFKA_SOURCE_TOPIC: "transformed-event"
       OFFSET_RESET: "earliest"
       MAX_POLL_RECORDS: 100
-      ASSIGNED_PARTITION: "0"
+      ASSIGNED_PARTITION: "0,1"
 
 
 

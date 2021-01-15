@@ -29,6 +29,7 @@ public class KafkaAggregator {
         objectMapper = new ObjectMapper();
         currentBalanceDAO = new CurrentBalanceDAO();
 
+
         //Get the list of assigned partitions
         List<Integer> assignedPartitions = Arrays.asList(Configuration.ASSIGNED_PARTITION.split(",")).stream().map(Integer::parseInt).collect(Collectors.toList());
 
@@ -59,6 +60,9 @@ public class KafkaAggregator {
             Map<String,CurrentBalance> committedBalanceList = new HashMap<>();
             Map<Integer,CurrentReadingPosition> currentReadingPositionList;
             ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofSeconds(10));
+            if(consumerRecords.isEmpty()){
+                continue;
+            }
             for (ConsumerRecord<String, String> consumerRecord : consumerRecords) {
                 try {
                     JsonNode jsonNode = objectMapper.readTree(consumerRecord.value());

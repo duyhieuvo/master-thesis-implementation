@@ -23,4 +23,21 @@ public class KafkaProducerCreator {
         producer.initTransactions();
         return producer;
     }
+
+    public static KafkaProducer<String,String> createProducer(String partition){
+        Properties props = new Properties();
+        props.put(ProducerConfig.CLIENT_ID_CONFIG, Configuration.PRODUCER_ID);
+        props.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, Configuration.KAFKA_URL);
+        props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG,Configuration.KEY_SERIALIZER);
+        props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG,Configuration.VALUE_SERIALIZER);
+
+        props.put(ProducerConfig.ACKS_CONFIG, "all");
+        props.put(ProducerConfig.MAX_IN_FLIGHT_REQUESTS_PER_CONNECTION,1);
+        props.put(ProducerConfig.ENABLE_IDEMPOTENCE_CONFIG,"true");
+        props.put(ProducerConfig.TRANSACTIONAL_ID_CONFIG,Configuration.TRANSACTION_ID + partition);
+
+        KafkaProducer<String,String> producer = new KafkaProducer<String, String>(props);
+        producer.initTransactions();
+        return producer;
+    }
 }

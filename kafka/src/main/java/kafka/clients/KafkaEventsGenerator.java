@@ -32,8 +32,7 @@ public class KafkaEventsGenerator implements EventsPublisher {
     private KafkaProducer<String,String> producer;
     private KafkaConsumer<String,String> consumer;
     private ObjectMapper objectMapper;
-    private ProducerRecord<String,String> record;
-//    private Random random;
+    private ProducerRecord<String,String> record, currentReadingPosition;
 
     public KafkaEventsGenerator(){
         producer = KafkaProducerCreator.createProducer();
@@ -50,12 +49,7 @@ public class KafkaEventsGenerator implements EventsPublisher {
             return 0;
         }
         for (ConsumerRecord<String, String> record : consumerRecords) {
-            try {
-                JsonNode jsonNode = objectMapper.readTree(record.value());
-                lastPublishedEvent = jsonNode.get("id").asInt();
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
-            }
+            lastPublishedEvent = Integer.parseInt(record.value());
         }
         return lastPublishedEvent;
     }
@@ -72,7 +66,7 @@ public class KafkaEventsGenerator implements EventsPublisher {
             String eventJson = objectMapper.writeValueAsString(event);
 
             record = new ProducerRecord<String, String>(Configuration.KAFKA_SINK_TOPIC,customerId, eventJson);
-
+            currentReadingPosition = new ProducerRecord<String,String>(Configuration.KAFKA_SOURCE_TOPIC,event.get("id"));
             //Introduce delay between publishing
 //            long start = 0;
 //            float elapsed = 0;
@@ -86,12 +80,14 @@ public class KafkaEventsGenerator implements EventsPublisher {
 //                }
 //            }
 
+            //Begin the transaction to atomically publish event and commit the corresponding reading position on the source file
             producer.beginTransaction();
-            Future<RecordMetadata> recordMetadata= producer.send(record);
+            producer.send(record).get();
             //Update the reading position of the Kafka consumer to the offset of the published record in the same transaction
             // so that it can retrieve the corresponding reading position from the source file when restarting
+            RecordMetadata recordMetadata = producer.send(currentReadingPosition).get();
             Map<TopicPartition, OffsetAndMetadata> offsetsToCommit = new HashMap<>();
-            offsetsToCommit.put(new TopicPartition(recordMetadata.get().topic(),recordMetadata.get().partition()),new OffsetAndMetadata(recordMetadata.get().offset()));
+            offsetsToCommit.put(new TopicPartition(recordMetadata.topic(),recordMetadata.partition()),new OffsetAndMetadata(recordMetadata.offset()));
             producer.sendOffsetsToTransaction(offsetsToCommit, consumer.groupMetadata().groupId());
             producer.commitTransaction();
             System.out.println("Published event: " + eventJson);

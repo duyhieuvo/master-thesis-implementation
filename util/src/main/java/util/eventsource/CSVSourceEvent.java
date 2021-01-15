@@ -22,13 +22,13 @@ public class CSVSourceEvent {
         try {
             String[] headers = readHeaders((pathToFile));
             Stream<String> stream = Files.lines(Paths.get(pathToFile));
-            stream
+            stream  .sequential()
                     .skip(startPosition) // skip headers and the previously read events
                     .map(line -> line.split(","))
                     .map(data -> IntStream.range(0, data.length)
                             .boxed()
                             .collect(Collectors.toMap(i -> headers[i], i -> data[i])))
-                    .forEach(event -> eventsPublisher.publishEvents(event));
+                    .forEachOrdered(event -> eventsPublisher.publishEvents(event));
         } catch (IOException e) {
             e.printStackTrace();
         }
