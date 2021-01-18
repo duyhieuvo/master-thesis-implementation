@@ -1,0 +1,67 @@
+---
+version: '2.4'
+services:
+  nats-streaming-1:
+    image: nats-streaming:${VERSION_NATS_STREAMING}
+    hostname: nats-streaming-1
+    container_name: nats-streaming-1
+    volumes:
+      - ./config/server-1.conf:/config.conf
+    command: --config /config.conf
+    ports:
+      - 14222:4222
+      - 18222:8222
+    depends_on:
+      postgresdb:
+        condition: service_healthy
+  nats-streaming-2:
+    image: nats-streaming:${VERSION_NATS_STREAMING}
+    hostname: nats-streaming-2
+    container_name: nats-streaming-2
+    volumes:
+      - ./config/server-2.conf:/config.conf
+    command: --config /config.conf
+    ports:
+      - 24222:4222
+      - 28222:8222
+    depends_on:
+      postgresdb:
+        condition: service_healthy
+  nats-streaming-3:
+    image: nats-streaming:${VERSION_NATS_STREAMING}
+    hostname: nats-streaming-3
+    container_name: nats-streaming-3
+    volumes:
+      - ./config/server-3.conf:/config.conf
+    command: --config /config.conf
+    ports:
+      - 34222:4222
+      - 38222:8222
+    depends_on:
+      postgresdb:
+        condition: service_healthy
+  postgresdb:
+    image: postgres-build:latest
+    build: ./db
+    restart: always
+    ports:
+      - "5434:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  adminer:
+    image: adminer
+    ports:
+      - "8081:8080"
+    depends_on:
+      postgresdb:
+        condition: service_healthy
+networks:
+  default:
+    name: nats-streaming
