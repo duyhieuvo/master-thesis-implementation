@@ -33,12 +33,13 @@ public class KafkaEventsGenerator implements EventsPublisher {
     private KafkaConsumer<String,String> consumer;
     private ObjectMapper objectMapper;
     private ProducerRecord<String,String> record, currentReadingPosition;
+    private int counter;
 
     public KafkaEventsGenerator(){
         producer = KafkaClientsCreator.createProducer();
         consumer = KafkaClientsCreator.createConsumer();
         objectMapper = new ObjectMapper();
-
+        counter = 0;
         consumer.subscribe(Collections.singletonList(Configuration.KAFKA_SOURCE_TOPIC));
     }
     public int getLastPublishedEvent(){
@@ -87,9 +88,11 @@ public class KafkaEventsGenerator implements EventsPublisher {
             RecordMetadata recordMetadata = producer.send(currentReadingPosition).get();
             Map<TopicPartition, OffsetAndMetadata> offsetsToCommit = new HashMap<>();
             offsetsToCommit.put(new TopicPartition(recordMetadata.topic(),recordMetadata.partition()),new OffsetAndMetadata(recordMetadata.offset()));
-
+            //Add the Byteman hook here to simulate the application crash
+            bytemanHook(counter);
             producer.sendOffsetsToTransaction(offsetsToCommit, consumer.groupMetadata().groupId());
             producer.commitTransaction();
+            counter++;
             System.out.println("Published event: " + eventJson);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
@@ -112,7 +115,7 @@ public class KafkaEventsGenerator implements EventsPublisher {
         CSVSourceEvent.generateEventFromCSV(Configuration.PATH_TO_CSV,this,lastPublishedEvent+1);
     }
 
-    public void bytemanHook(){
+    public void bytemanHook(int counter){
         return;
     }
 }

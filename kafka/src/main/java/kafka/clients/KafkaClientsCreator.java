@@ -1,6 +1,7 @@
 package kafka.clients;
 
 import kafka.configuration.Configuration;
+import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -55,6 +56,9 @@ public class KafkaClientsCreator {
         props.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, Configuration.OFFSET_RESET);
         props.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, "false");
         props.put(ConsumerConfig.ISOLATION_LEVEL_CONFIG,"read_committed");
+
+        //Set max poll to only 30 seconds to test the case with ProducerFencedException
+        props.put(ConsumerConfig.MAX_POLL_INTERVAL_MS_CONFIG,30000);
 
         KafkaConsumer<String,String> consumer = new KafkaConsumer<String, String>(props);
         return consumer;

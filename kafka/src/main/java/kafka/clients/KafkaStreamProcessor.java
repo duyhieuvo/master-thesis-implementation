@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 
@@ -27,11 +28,13 @@ public class KafkaStreamProcessor {
     private KafkaConsumer<String,String> consumer;
     private ObjectMapper objectMapper;
     private ProducerRecord<String,String> producerRecord;
+    private int counter;
 
     public KafkaStreamProcessor(){
         producers = new HashMap<>();
         consumer = KafkaClientsCreator.createConsumer();
         objectMapper = new ObjectMapper();
+        counter = 0;
 
         consumer.subscribe(Collections.singletonList(Configuration.KAFKA_SOURCE_TOPIC), new ConsumerRebalanceListener() {
             @Override
@@ -63,17 +66,29 @@ public class KafkaStreamProcessor {
             if(consumerRecords.isEmpty()){
                 continue;
             }
+            //Simulate the case failure scenario of stream processor temporarily disconnected from the broker
+            //The application is paused until the max poll and session timeout interval is over
+            //Its partition will reassigned to the other consumer in the group
+            //When the application continues, it will encounter ProducerFencedException since the other application has already created
+            //a new producer instance with the same transactional id.
+            bytemanHookZombieInstance();
+
+
+            //Loop through all the producer instances and start transaction for each producer
             for(Map.Entry<Integer,KafkaProducer<String,String>> producer : producers.entrySet()){
                 try{
                     producer.getValue().beginTransaction();
                 }catch(ProducerFencedException | OutOfOrderSequenceException e) {
-                    producer.getValue().close();
                     e.printStackTrace();
+                    System.out.println("Closing the producer");
+                    producer.getValue().close();
                 }catch (KafkaException e) {
                     producer.getValue().abortTransaction();
                     e.printStackTrace();
                 }
             }
+
+            //Read records from the newly pulled batch, transform them and publish to the transformed-event topic
             for (ConsumerRecord<String, String> consumerRecord : consumerRecords) {
                 JsonNode jsonNode = null;
                 try {
@@ -89,20 +104,22 @@ public class KafkaStreamProcessor {
                     transformedRecord.put("customer",customerId);
                     transformedRecord.put("value", value);
                     producerRecord = new ProducerRecord<String, String>(Configuration.KAFKA_SINK_TOPIC, customerId, objectMapper.writeValueAsString(transformedRecord));
+                    RecordMetadata recordMetadata=producers.get(consumerRecord.partition()).send(producerRecord).get();
+                    System.out.println("Publish event: "+ producerRecord.value());
+                    counter++;
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
-                }
-
-                Future<RecordMetadata> recordMetadata=producers.get(consumerRecord.partition()).send(producerRecord);
-                System.out.println("Publish event: "+ producerRecord.value());
-                long start = 0;
-                float elapsed = 0;
-                int wait = 1;
-                start = System.currentTimeMillis();
-                while(true){
-                    elapsed= (System.currentTimeMillis()-start)/1000F;
-                    if(elapsed>wait){
-                        break;
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (ProducerFencedException | OutOfOrderSequenceException e) {
+                    e.printStackTrace();
+                    System.out.println("Closing the producer");
+                    producers.get(consumerRecord.partition()).close();
+                } catch (ExecutionException e) {
+                    e.printStackTrace();
+                    if(e.getCause() != null && e.getCause() instanceof ProducerFencedException){
+                        System.out.println("Closing the producer");
+                        producers.get(consumerRecord.partition()).close();
                     }
                 }
 
@@ -116,28 +133,30 @@ public class KafkaStreamProcessor {
 //                   System.exit(1);
 //              }
             }
+
+            bytemanHook(counter);
+
+            //Update the offset on the source topic raw-event to pull new records the next time poll method is invoke
             for(Map.Entry<TopicPartition, OffsetAndMetadata> offsetToCommit:getOffsetToCommitOnSourceTopic(consumerRecords).entrySet()){
                 Map<TopicPartition, OffsetAndMetadata> mapOffsetToCommit = new HashMap<>();
                 mapOffsetToCommit.put(offsetToCommit.getKey(),offsetToCommit.getValue());
                 producers.get(offsetToCommit.getKey().partition()).sendOffsetsToTransaction(mapOffsetToCommit,consumer.groupMetadata().groupId());
             }
+
+            //Commit the transactions
             for(Map.Entry<Integer,KafkaProducer<String,String>> producer : producers.entrySet()){
                 try{
                     producer.getValue().commitTransaction();
                 }catch(ProducerFencedException | OutOfOrderSequenceException e) {
-                    producer.getValue().close();
                     e.printStackTrace();
+                    System.out.println("Closing the producer");
+                    producer.getValue().close();
                 }catch (KafkaException e) {
                     producer.getValue().abortTransaction();
                     e.printStackTrace();
                 }
             }
         }
-//            catch (InterruptedException e) {
-//                e.printStackTrace();
-//            } catch (ExecutionException e) {
-//                e.printStackTrace();
-//            }
     }
 
     public Map<TopicPartition, OffsetAndMetadata> getOffsetToCommitOnSourceTopic(ConsumerRecords records){
@@ -149,5 +168,12 @@ public class KafkaStreamProcessor {
             offsetsToCommit.put(partition, new OffsetAndMetadata(offset + 1));
         }
         return offsetsToCommit;
+    }
+
+    public void bytemanHook(int counter){
+        return;
+    }
+    public void bytemanHookZombieInstance(){
+        return;
     }
 }

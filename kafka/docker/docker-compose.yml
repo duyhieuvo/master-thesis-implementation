@@ -183,6 +183,8 @@ services:
       - kafka3
   postgres_db:
     image: postgres-db:latest
+    hostname: postgres_db
+    container_name: postgres_db
     build: ./db
     restart: always
     ports:
@@ -192,6 +194,8 @@ services:
       - POSTGRES_PASSWORD=postgres
   adminer:
     image: adminer
+    hostname: adminer
+    container_name: adminer
     ports:
       - "8081:8080"
 
@@ -202,6 +206,27 @@ services:
     hostname: event-generator
     container_name: event-generator
     command: event-generator
+    volumes:
+      - ./test-data:/test-data
+    environment:
+      KAFKA_URL: "kafka:9092"
+      CONSUMER_ID: "event-generator-consumer-1"
+      GROUP_ID: "event-generator-consumer-group-1"
+      KAFKA_SOURCE_TOPIC: "reading-position"
+      OFFSET_RESET: "earliest"
+      MAX_POLL_RECORDS: 1
+      TRANSACTION_ID: "event-generator-transaction"
+      PRODUCER_ID: "event-generator-producer-1"
+      KAFKA_SINK_TOPIC: "raw-event"
+      PATH_TO_CSV: "/test-data/test_events_multiple_customers.csv"
+
+  event-generator-crash:
+    build:
+      context: ./client
+    image: usecase/kafka-client:latestlocal
+    hostname: event-generator
+    container_name: event-generator-crash
+    entrypoint: ["java", "-javaagent:/byteman/byteman.jar=script:/byteman/byteman_eventsgenerator.btm", "-Dorg.jboss.byteman.debug=true", "-jar", "/opt/kafkaClient.jar", "event-generator"]
     volumes:
       - ./test-data:/test-data
     environment:
@@ -234,6 +259,24 @@ services:
       PRODUCER_ID: "stream-processor-producer-1"
       KAFKA_SINK_TOPIC: "transformed-event"
 
+  stream-processor-1-crash:
+    build:
+      context: ./client
+    image: usecase/kafka-client:latestlocal
+    hostname: stream-processor-1
+    container_name: stream-processor-1-crash
+    entrypoint: ["java", "-javaagent:/byteman/byteman.jar=script:/byteman/byteman_streamprocessor.btm", "-Dorg.jboss.byteman.debug=true", "-jar", "/opt/kafkaClient.jar", "stream-processor"]
+    environment:
+      KAFKA_URL: "kafka:9092"
+      CONSUMER_ID: "stream-processor-consumer-1"
+      GROUP_ID: "stream-processor-consumer-group-1"
+      KAFKA_SOURCE_TOPIC: "raw-event"
+      OFFSET_RESET: "earliest"
+      MAX_POLL_RECORDS: 10
+      TRANSACTION_ID: "stream-processor-transaction"
+      PRODUCER_ID: "stream-processor-producer-1"
+      KAFKA_SINK_TOPIC: "transformed-event"
+
   stream-processor-2:
     build:
       context: ./client
@@ -252,6 +295,44 @@ services:
       PRODUCER_ID: "stream-processor-producer-1"
       KAFKA_SINK_TOPIC: "transformed-event"
 
+  stream-processor-2-zombie-instance:
+    build:
+      context: ./client
+    image: usecase/kafka-client:latestlocal
+    hostname: stream-processor-2-zombie-instance
+    container_name: stream-processor-2-zombie-instance
+    entrypoint: ["java", "-javaagent:/byteman/byteman.jar=script:/byteman/byteman_fencedproducer.btm", "-Dorg.jboss.byteman.debug=true", "-jar", "/opt/kafkaClient.jar", "stream-processor"]
+    environment:
+      KAFKA_URL: "kafka:9092"
+      CONSUMER_ID: "stream-processor-consumer-2"
+      GROUP_ID: "stream-processor-consumer-group-1"
+      KAFKA_SOURCE_TOPIC: "raw-event"
+      OFFSET_RESET: "earliest"
+      MAX_POLL_RECORDS: 10
+      TRANSACTION_ID: "stream-processor-transaction"
+      PRODUCER_ID: "stream-processor-producer-1"
+      KAFKA_SINK_TOPIC: "transformed-event"
+
+  stream-processor-2-crash:
+    build:
+      context: ./client
+    image: usecase/kafka-client:latestlocal
+    hostname: stream-processor-2
+    container_name: stream-processor-2-crash
+    entrypoint: ["java", "-javaagent:/byteman/byteman.jar=script:/byteman/byteman_streamprocessor.btm", "-Dorg.jboss.byteman.debug=true", "-jar", "/opt/kafkaClient.jar", "stream-processor"]
+    environment:
+      KAFKA_URL: "kafka:9092"
+      CONSUMER_ID: "stream-processor-consumer-2"
+      GROUP_ID: "stream-processor-consumer-group-1"
+      KAFKA_SOURCE_TOPIC: "raw-event"
+      OFFSET_RESET: "earliest"
+      MAX_POLL_RECORDS: 10
+      TRANSACTION_ID: "stream-processor-transaction"
+      PRODUCER_ID: "stream-processor-producer-1"
+      KAFKA_SINK_TOPIC: "transformed-event"
+
+
+
   stream-aggregator:
     build:
       context: ./client
@@ -259,6 +340,22 @@ services:
     hostname: stream-aggregator
     container_name: stream-aggregator
     command: stream-aggregator
+    environment:
+      KAFKA_URL: "kafka:9092"
+      CONSUMER_ID: "stream-aggregator-consumer-1"
+      GROUP_ID: "stream-aggregator-consumer-group-1"
+      KAFKA_SOURCE_TOPIC: "transformed-event"
+      OFFSET_RESET: "earliest"
+      MAX_POLL_RECORDS: 100
+      ASSIGNED_PARTITION: "0,1"
+
+  stream-aggregator-crash:
+    build:
+      context: ./client
+    image: usecase/kafka-client:latestlocal
+    hostname: stream-aggregator
+    container_name: stream-aggregator-crash
+    command: ["java", "-javaagent:/byteman/byteman.jar=script:/byteman/byteman_streamaggregator.btm", "-Dorg.jboss.byteman.debug=true", "-jar", "/opt/kafkaClient.jar", "stream-aggregator"]
     environment:
       KAFKA_URL: "kafka:9092"
       CONSUMER_ID: "stream-aggregator-consumer-1"

@@ -23,11 +23,13 @@ public class KafkaAggregator {
     private ObjectMapper objectMapper;
     private CurrentBalanceDAO currentBalanceDAO;
     private Map<String,Float> customersBalances;
+    private int counter;
 
     public KafkaAggregator(){
         consumer = KafkaClientsCreator.createConsumer();
         objectMapper = new ObjectMapper();
         currentBalanceDAO = new CurrentBalanceDAO();
+        counter = 0;
 
 
         //Get the list of assigned partitions
@@ -67,13 +69,13 @@ public class KafkaAggregator {
                 try {
                     JsonNode jsonNode = objectMapper.readTree(consumerRecord.value());
                     customerId = jsonNode.get("customer").asText();
-//                    System.out.println(jsonNode);
                     newTransactionValue = Float.valueOf(jsonNode.get("value").asText());
                     newBalanceValue = newTransactionValue + customersBalances.getOrDefault(customerId,0.0f);
                     //Update the local copy of the current balance
                     customersBalances.put(customerId,newBalanceValue);
                     //Update the current balance to send to the database
                     committedBalanceList.put(customerId,new CurrentBalance(customerId,newBalanceValue,consumerRecord.partition()));
+                    counter++;
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
                 }
@@ -82,7 +84,7 @@ public class KafkaAggregator {
             for(Map.Entry<Integer,CurrentReadingPosition> read: currentReadingPositionList.entrySet()){
                 System.out.println(read.getKey() + read.getValue().getCurrentReadingPosition());
             }
-            currentBalanceDAO.updateListCustomerBalance(committedBalanceList,currentReadingPositionList);
+            currentBalanceDAO.updateListCustomerBalance(committedBalanceList,currentReadingPositionList,counter);
 
         }
 
@@ -93,9 +95,6 @@ public class KafkaAggregator {
         Set<TopicPartition> topicPartitionSet = records.partitions();
         for (TopicPartition partition : topicPartitionSet) {
             List<ConsumerRecord> partitionedRecords = records.records(partition);
-            for(ConsumerRecord record:partitionedRecords){
-                System.out.println("Offset " + record.offset() + record.value());
-            }
             long offset = partitionedRecords.get(partitionedRecords.size() - 1).offset();
             offsetsToCommit.put(partition.partition(), new CurrentReadingPosition(partition.partition(),offset+1));
         }

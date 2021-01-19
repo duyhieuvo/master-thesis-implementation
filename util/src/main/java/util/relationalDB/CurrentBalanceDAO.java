@@ -43,7 +43,7 @@ public class CurrentBalanceDAO {
         return status;
     }
 
-    public boolean updateListCustomerBalance(Map<String,CurrentBalance> currentBalanceList, Map<Integer,CurrentReadingPosition> currentReadingPositionList){
+    public boolean updateListCustomerBalance(Map<String,CurrentBalance> currentBalanceList, Map<Integer,CurrentReadingPosition> currentReadingPositionList,int counter){
         EntityManager entityManager = ENTITY_MANAGER_FACTORY.createEntityManager();
         EntityTransaction transaction = null;
 
@@ -55,7 +55,8 @@ public class CurrentBalanceDAO {
             for(Map.Entry<String, CurrentBalance> currentBalance : currentBalanceList.entrySet()){
                 entityManager.merge(currentBalance.getValue());
             }
-
+            //Add byteman hook to simulate application crash during a transaction
+            bytemanHook(counter);
             for(Map.Entry<Integer,CurrentReadingPosition> currentReadingPosition : currentReadingPositionList.entrySet()){
                 entityManager.merge(currentReadingPosition.getValue());
             }
@@ -133,5 +134,9 @@ public class CurrentBalanceDAO {
             entityManager.close();
         }
         return currentReadingPositions;
+    }
+
+    public void bytemanHook(int counter){
+        return;
     }
 }

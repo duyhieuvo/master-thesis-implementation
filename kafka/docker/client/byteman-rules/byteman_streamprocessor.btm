@@ -1,0 +1,8 @@
+RULE Fault injection to the stream processor, simulate application crash during a transaction
+CLASS kafka.clients.KafkaStreamProcessor
+METHOD bytemanHook(int)
+AT EXIT
+BIND counter = $1
+IF counter >= 120
+DO debug("Simulate application crash after processing 120 events or more"), killJVM()
+ENDRULE

@@ -1,0 +1,7 @@
+RULE Pause the stream processor to simulate application being temporarily disconnected from Kafka and become zombie instance
+CLASS kafka.clients.KafkaStreamProcessor
+METHOD bytemanHookZombieInstance()
+AT ENTRY
+IF TRUE
+DO debug("Simulate application temporarily disconnected from Kafka"), delay(45000)
+ENDRULE
