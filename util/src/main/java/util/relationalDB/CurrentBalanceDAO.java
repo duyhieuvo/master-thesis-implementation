@@ -55,6 +55,7 @@ public class CurrentBalanceDAO {
             for(Map.Entry<String, CurrentBalance> currentBalance : currentBalanceList.entrySet()){
                 entityManager.merge(currentBalance.getValue());
             }
+
             for(Map.Entry<Integer,CurrentReadingPosition> currentReadingPosition : currentReadingPositionList.entrySet()){
                 entityManager.merge(currentReadingPosition.getValue());
             }

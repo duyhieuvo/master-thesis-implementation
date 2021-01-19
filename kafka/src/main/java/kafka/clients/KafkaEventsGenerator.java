@@ -35,12 +35,11 @@ public class KafkaEventsGenerator implements EventsPublisher {
     private ProducerRecord<String,String> record, currentReadingPosition;
 
     public KafkaEventsGenerator(){
-        producer = KafkaProducerCreator.createProducer();
-        consumer = KafkaConsumerCreator.createConsumer();
+        producer = KafkaClientsCreator.createProducer();
+        consumer = KafkaClientsCreator.createConsumer();
         objectMapper = new ObjectMapper();
 
         consumer.subscribe(Collections.singletonList(Configuration.KAFKA_SOURCE_TOPIC));
-//        random = new Random();
     }
     public int getLastPublishedEvent(){
         int lastPublishedEvent = 0;
@@ -71,7 +70,7 @@ public class KafkaEventsGenerator implements EventsPublisher {
 //            long start = 0;
 //            float elapsed = 0;
 //            int wait = 0;
-//            wait = random.nextInt(5- 1 + 1) + 1;
+//            wait = 5;
 //            start = System.currentTimeMillis();
 //            while(true){
 //                elapsed= (System.currentTimeMillis()-start)/1000F;
@@ -88,6 +87,7 @@ public class KafkaEventsGenerator implements EventsPublisher {
             RecordMetadata recordMetadata = producer.send(currentReadingPosition).get();
             Map<TopicPartition, OffsetAndMetadata> offsetsToCommit = new HashMap<>();
             offsetsToCommit.put(new TopicPartition(recordMetadata.topic(),recordMetadata.partition()),new OffsetAndMetadata(recordMetadata.offset()));
+
             producer.sendOffsetsToTransaction(offsetsToCommit, consumer.groupMetadata().groupId());
             producer.commitTransaction();
             System.out.println("Published event: " + eventJson);
@@ -110,5 +110,9 @@ public class KafkaEventsGenerator implements EventsPublisher {
         //get the id of the last published transaction to resume from that point onward
         int lastPublishedEvent = getLastPublishedEvent();
         CSVSourceEvent.generateEventFromCSV(Configuration.PATH_TO_CSV,this,lastPublishedEvent+1);
+    }
+
+    public void bytemanHook(){
+        return;
     }
 }

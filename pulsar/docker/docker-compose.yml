@@ -155,10 +155,11 @@ services:
       timeout: 18s
       retries: 10
 
-  client-cli:
+
+  cli:
     image: apachepulsar/pulsar-all:${PULSAR_VERSION}
-    hostname: client-cli
-    container_name: client-cli
+    hostname: cli
+    container_name: cli
     restart: on-failure
     environment:
       PULSAR_CLIENT_CONF: /custom-conf/client.conf
@@ -169,6 +170,25 @@ services:
     depends_on:
       - broker1
       - broker2
+  event-generator:
+    build:
+      context: ./client
+    image: usecase/pulsar-client:latestlocal
+    hostname: event-generator
+    container_name: event-generator
+    command: event-generator
+    volumes:
+      - ./test-data:/test-data
+    environment:
+      PULSAR_URL: "pulsar://broker1:6650"
+#      PULSAR_SOURCE_READER_TOPIC: "persistent://public/default/reading-position"
+#      READER_NAME: "event-generator-reader-1"
+#      PULSAR_SINK_TOPIC: "persistent://public/default/raw-event"
+#      PRODUCER_NAME: "event-generator-producer-1"
+#      PULSAR_ADMIN_URL: "http://broker:8080"
+#      PATH_TO_CSV: "/test-data/test_events_multiple_customers.csv"
+#      PULSAR_SOURCE_TOPIC: "persistent://public/default/raw-event"
+#      SUBSCRIPTION_NAME: "subscription-test132345"
 networks:
   default:
     name: pulsar_network

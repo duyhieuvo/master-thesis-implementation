@@ -25,7 +25,7 @@ public class KafkaAggregator {
     private Map<String,Float> customersBalances;
 
     public KafkaAggregator(){
-        consumer = KafkaConsumerCreator.createConsumer();
+        consumer = KafkaClientsCreator.createConsumer();
         objectMapper = new ObjectMapper();
         currentBalanceDAO = new CurrentBalanceDAO();
 

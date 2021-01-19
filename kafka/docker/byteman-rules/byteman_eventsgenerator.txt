@@ -1,0 +1,8 @@
+RULE Fault injection to the event generator, simulate application crash between a transaction
+CLASS kafka.clients.KafkaEventsGenerator
+METHOD doSomething(int)
+AT INVOKE PrintStream.println
+BIND buffer = 0
+IF TRUE
+DO throw sample.byteman.test.ApplicationException(1,"ha! byteman was here!")
+ENDRULE

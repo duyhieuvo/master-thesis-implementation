@@ -17,6 +17,7 @@
 
     <properties>
         <kafka.version>2.6.0</kafka.version>
+        <pulsar.version>2.7.0</pulsar.version>
         <hibernate.version>5.4.27.Final</hibernate.version>
     </properties>
 
@@ -32,6 +33,18 @@
                 <groupId>org.apache.kafka</groupId>
                 <artifactId>kafka-clients</artifactId>
                 <version>${kafka.version}</version>
+            </dependency>
+
+            <!-- Pulsar dependencies -->
+            <dependency>
+                <groupId>org.apache.pulsar</groupId>
+                <artifactId>pulsar-client</artifactId>
+                <version>${pulsar.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.pulsar</groupId>
+                <artifactId>pulsar-client-admin</artifactId>
+                <version>${pulsar.version}</version>
             </dependency>
 
             <!-- Relational database dependencies -->

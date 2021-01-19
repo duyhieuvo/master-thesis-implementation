@@ -30,7 +30,7 @@ public class KafkaStreamProcessor {
 
     public KafkaStreamProcessor(){
         producers = new HashMap<>();
-        consumer = KafkaConsumerCreator.createConsumer();
+        consumer = KafkaClientsCreator.createConsumer();
         objectMapper = new ObjectMapper();
 
         consumer.subscribe(Collections.singletonList(Configuration.KAFKA_SOURCE_TOPIC), new ConsumerRebalanceListener() {
@@ -38,6 +38,7 @@ public class KafkaStreamProcessor {
             public void onPartitionsRevoked(Collection<TopicPartition> collection) {
                 for(TopicPartition topicPartition : collection){
                     System.out.println("Partition revoked: " + topicPartition.partition());
+                    producers.get(topicPartition.partition()).close();
                     producers.remove(topicPartition.partition());
                 }
 
@@ -46,7 +47,7 @@ public class KafkaStreamProcessor {
             public void onPartitionsAssigned(Collection<TopicPartition> collection) {
                 for(TopicPartition topicPartition : collection){
                     System.out.println("Partition assigned: " + topicPartition.partition());
-                    producers.put(topicPartition.partition(), KafkaProducerCreator.createProducer("partition-" + topicPartition.partition()));
+                    producers.put(topicPartition.partition(), KafkaClientsCreator.createProducer("partition-" + topicPartition.partition()));
                 }
             }
         });
