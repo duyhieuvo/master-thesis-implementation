@@ -12,43 +12,43 @@ import pulsar.configuration.Configuration;
 import util.eventsource.CSVSourceEvent;
 import util.eventsource.EventsPublisher;
 
-import java.time.Duration;
+import java.io.IOException;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 public class PulsarEventsGenerator implements EventsPublisher {
     private PulsarClient client;
     private PulsarAdmin adminClient;
-    private Producer<String> producerEvent, producerRowNumber;
-    private Consumer<String> consumer;
+    private Producer<String> producerEvent,  producerReadingPosition;
     private Reader<String> reader;
     private ObjectMapper objectMapper;
 
     public PulsarEventsGenerator() {
         client = PulsarClientsCreator.createClient();
-        adminClient = PulsarClientsCreator.createAdmin();
-        producerEvent = PulsarClientsCreator.createProducerEvent(client);
-        producerRowNumber = PulsarClientsCreator.createProducerReadingPosition(client);
+        adminClient = PulsarClientsCreator.createAdminClient();
+        producerEvent = PulsarClientsCreator.createProducer(client,Configuration.PULSAR_SINK_TOPIC);
+        producerReadingPosition = PulsarClientsCreator.createProducer(client,Configuration.PULSAR_SOURCE_TOPIC);
         objectMapper = new ObjectMapper();
-        consumer = PulsarClientsCreator.createConsumer(client);
 
     }
     public int getLastPublishedEvent(){
         int lastPublishedEvent = 0;
         MessageId messageId = null;
         try {
-            messageId = adminClient.topics().getLastMessageId(Configuration.PULSAR_SOURCE_READER_TOPIC);
-            reader = PulsarClientsCreator.createReader(client,messageId);
+            messageId = adminClient.topics().getLastMessageId(Configuration.PULSAR_SOURCE_TOPIC);
+            reader = PulsarClientsCreator.createReader(client,Configuration.PULSAR_SOURCE_TOPIC,messageId);
             Message<String> message = reader.readNext(10,TimeUnit.SECONDS);
             if(message!=null){
                 lastPublishedEvent = Integer.parseInt(message.getValue());
             }
+            reader.close();
             System.out.println("Last checkpoint row: " + lastPublishedEvent);
         } catch (PulsarAdminException e) {
             e.printStackTrace();
         } catch (PulsarClientException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
         }
 
@@ -59,7 +59,6 @@ public class PulsarEventsGenerator implements EventsPublisher {
     @Override
     public void publishEvents(Map<String, String> event) {
         try {
-            System.out.println(event);
             //Get the customer ID to use as the key for records
             String customerId = event.get("customer");
             if(customerId==null) {
@@ -68,50 +67,51 @@ public class PulsarEventsGenerator implements EventsPublisher {
             String eventJson = objectMapper.writeValueAsString(event);
 
             //Create the transaction to publish event along with the corresponding row number in the source CSV file
-            Transaction txn = client
-                    .newTransaction()
-                    .withTransactionTimeout(5, TimeUnit.MINUTES)
-                    .build()
-                    .get();
-            System.out.println(txn);
+//            Transaction txn = client
+//                    .newTransaction()
+//                    .withTransactionTimeout(5, TimeUnit.MINUTES)
+//                    .build()
+//                    .get();
+//            System.out.println(txn);
 
             //Send the event
-            producerEvent.newMessage(txn)
+//            producerEvent.newMessage(txn)
+            producerEvent.newMessage()
                     .key(customerId)
                     .value(eventJson)
-                    .sendAsync();
-
-
+                    .send();
             System.out.println("Publish event: " + eventJson);
+
             //Send the row number in source CSV file
-            producerRowNumber.newMessage(txn)
+//            producerReadingPosition.newMessage(txn)
+            producerReadingPosition.newMessage()
                     .value(event.get("id"))
-                    .sendAsync();
+                    .send();
             System.out.println("Publish reading position: " + event.get("id"));
             //Commit the transaction
-            txn.commit().get();
-
-            long start = 0;
-            float elapsed = 0;
-            int wait = 5;
-            start = System.currentTimeMillis();
-            while(true){
-                elapsed= (System.currentTimeMillis()-start)/1000F;
-                if(elapsed>wait){
-                    break;
-                }
-            }
+//            txn.commit().get();
+//
+//            long start = 0;
+//            float elapsed = 0;
+//            int wait = 5;
+//            start = System.currentTimeMillis();
+//            while(true){
+//                elapsed= (System.currentTimeMillis()-start)/1000F;
+//                if(elapsed>wait){
+//                    break;
+//                }
+//            }
 
         } catch (IllegalArgumentException e){
                 e.printStackTrace();
         } catch (JsonProcessingException e) {
             e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
+        } catch (PulsarClientException e) {
             e.printStackTrace();
         }
-//        catch (PulsarClientException e) {
+//        catch (InterruptedException e) {
+//            e.printStackTrace();
+//        } catch (ExecutionException e) {
 //            e.printStackTrace();
 //        }
     }

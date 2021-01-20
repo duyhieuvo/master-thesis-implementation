@@ -41,8 +41,10 @@ public class KafkaStreamProcessor {
             public void onPartitionsRevoked(Collection<TopicPartition> collection) {
                 for(TopicPartition topicPartition : collection){
                     System.out.println("Partition revoked: " + topicPartition.partition());
-                    producers.get(topicPartition.partition()).close();
-                    producers.remove(topicPartition.partition());
+                    if(producers.containsKey(topicPartition.partition())){
+                        producers.get(topicPartition.partition()).close();
+                        producers.remove(topicPartition.partition());
+                    }
                 }
 
             }
@@ -66,11 +68,10 @@ public class KafkaStreamProcessor {
             if(consumerRecords.isEmpty()){
                 continue;
             }
-            //Simulate the case failure scenario of stream processor temporarily disconnected from the broker
-            //The application is paused until the max poll and session timeout interval is over
-            //Its partition will reassigned to the other consumer in the group
-            //When the application continues, it will encounter ProducerFencedException since the other application has already created
-            //a new producer instance with the same transactional id.
+            //simulate the case the application is paused and the consumer is considered disconnected by Kafka since it does not send new poll request within the time limit
+            //in this case, this stream processor still have some records buffered locally from the last poll
+            //this stream processor instance and the failover instance are temporarily in split-brain state when they both produce new outputs for these records
+            //without the fencing mechanism, the exactly-once semantics will be violated
             bytemanHookZombieInstance();
 
 
@@ -82,6 +83,7 @@ public class KafkaStreamProcessor {
                     e.printStackTrace();
                     System.out.println("Closing the producer");
                     producer.getValue().close();
+                    producers.remove(producer.getKey());
                 }catch (KafkaException e) {
                     producer.getValue().abortTransaction();
                     e.printStackTrace();
@@ -104,8 +106,13 @@ public class KafkaStreamProcessor {
                     transformedRecord.put("customer",customerId);
                     transformedRecord.put("value", value);
                     producerRecord = new ProducerRecord<String, String>(Configuration.KAFKA_SINK_TOPIC, customerId, objectMapper.writeValueAsString(transformedRecord));
-                    RecordMetadata recordMetadata=producers.get(consumerRecord.partition()).send(producerRecord).get();
-                    System.out.println("Publish event: "+ producerRecord.value());
+                    if(producers.containsKey(consumerRecord.partition())){
+                        RecordMetadata recordMetadata=producers.get(consumerRecord.partition()).send(producerRecord).get();
+                        System.out.println("Publish event: "+ producerRecord.value());
+                    }
+                    else{
+                        System.out.println("The record belongs to the a revoked partition => skip");
+                    }
                     counter++;
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();
@@ -115,23 +122,15 @@ public class KafkaStreamProcessor {
                     e.printStackTrace();
                     System.out.println("Closing the producer");
                     producers.get(consumerRecord.partition()).close();
+                    producers.remove(consumerRecord.partition());
                 } catch (ExecutionException e) {
                     e.printStackTrace();
                     if(e.getCause() != null && e.getCause() instanceof ProducerFencedException){
                         System.out.println("Closing the producer");
                         producers.get(consumerRecord.partition()).close();
+                        producers.remove(consumerRecord.partition());
                     }
                 }
-
-//              //Enforce sending records one by one instead of in batch to see the effect of read_committed to discard any record of unfinished transaction
-//              //Otherwise, the application may be stopped before the batch is sent and therefore event the consumer with read_uncommitted cannot see these records
-//              recordMetadata.get();
-//              // Simulate application crashes during a transaction
-//              i++;
-//              System.out.println(i);
-//              if(i==120){
-//                   System.exit(1);
-//              }
             }
 
             bytemanHook(counter);
@@ -140,7 +139,16 @@ public class KafkaStreamProcessor {
             for(Map.Entry<TopicPartition, OffsetAndMetadata> offsetToCommit:getOffsetToCommitOnSourceTopic(consumerRecords).entrySet()){
                 Map<TopicPartition, OffsetAndMetadata> mapOffsetToCommit = new HashMap<>();
                 mapOffsetToCommit.put(offsetToCommit.getKey(),offsetToCommit.getValue());
-                producers.get(offsetToCommit.getKey().partition()).sendOffsetsToTransaction(mapOffsetToCommit,consumer.groupMetadata().groupId());
+                if(producers.containsKey(offsetToCommit.getKey().partition())){
+                    try{
+                        producers.get(offsetToCommit.getKey().partition()).sendOffsetsToTransaction(mapOffsetToCommit,consumer.groupMetadata().groupId());
+                    }catch(ProducerFencedException e){
+                        e.printStackTrace();
+                        System.out.println("Closing the producer");
+                        producers.get(offsetToCommit.getKey().partition()).close();
+                        producers.remove(offsetToCommit.getKey().partition());
+                    }
+                }
             }
 
             //Commit the transactions
@@ -151,6 +159,7 @@ public class KafkaStreamProcessor {
                     e.printStackTrace();
                     System.out.println("Closing the producer");
                     producer.getValue().close();
+                    producers.remove(producer.getKey());
                 }catch (KafkaException e) {
                     producer.getValue().abortTransaction();
                     e.printStackTrace();
