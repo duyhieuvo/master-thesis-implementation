@@ -76,10 +76,8 @@ public class PulsarStreamProcessor {
         while(true){
             try {
                 message = consumer.receive();
-                System.out.println("Received: " + message.getValue());
                 String sourcePartitionTopic = message.getTopicName();
                 int sourcePartition = Integer.parseInt(sourcePartitionTopic.substring(sourcePartitionTopic.length()-1));
-                System.out.print("source partition " + sourcePartition + " " + sourcePartitionTopic);
                 if(!producers.containsKey(sourcePartition)){
                     System.out.println("The record belongs to a revoked partition => skip");
                     continue;
@@ -96,32 +94,21 @@ public class PulsarStreamProcessor {
                 transformedRecord.put("customer",customerId);
                 transformedRecord.put("value", value);
 
-                long start = 0;
-                float elapsed = 0;
-                int wait = 5;
-                start = System.currentTimeMillis();
-                while(true){
-                    elapsed= (System.currentTimeMillis()-start)/1000F;
-                    if(elapsed>wait){
-                        break;
-                    }
-                }
 
 
                 //Publish the transformed event to output topic
-                if(producers.containsKey(sourcePartition)){
-                    producers.get(sourcePartition).newMessage()
-                            .key(customerId)
-                            .value(objectMapper.writeValueAsString(transformedRecord))
-                            .send();
-                    System.out.println("Publish transformed event: " + transformedRecord);
-                }
+
+                producers.get(sourcePartition).newMessage()
+                         .key(customerId)
+                         .value(objectMapper.writeValueAsString(transformedRecord))
+                         .send();
+                System.out.println("Publish transformed event: " + transformedRecord);
+
 
                 //Acknowledge the consumption of message on input topic
-                if(producers.containsKey(sourcePartition)){
-                    consumer.acknowledge(message);
-                    System.out.println("Acknowledge input event");
-                }
+                 consumer.acknowledge(message);
+                 System.out.println("Acknowledge input event");
+
             } catch (PulsarClientException e) {
                 e.printStackTrace();
             } catch (JsonMappingException e) {

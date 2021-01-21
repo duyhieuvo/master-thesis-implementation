@@ -15,6 +15,8 @@ public interface Configuration {
 
     //Pulsar reader configuration
     String READER_NAME = (String) EnvironmentVariableParser.getEnvironmentVariables("READER_NAME","reader-1");
+    // In case of partitioned topics to create multiple reader instances
+    String ASSIGNED_PARTITION = (String) EnvironmentVariableParser.getEnvironmentVariables("ASSIGNED_PARTITION","0");
 
     //Pulsar producer configurations
     String PRODUCER_NAME = (String) EnvironmentVariableParser.getEnvironmentVariables("PRODUCER_NAME","producer-1");
@@ -22,6 +24,7 @@ public interface Configuration {
     //Pulsar topics
     String PULSAR_SOURCE_TOPIC = (String) EnvironmentVariableParser.getEnvironmentVariables("PULSAR_SOURCE_TOPIC","persistent://public/default/source-topic");
     String PULSAR_SINK_TOPIC= (String) EnvironmentVariableParser.getEnvironmentVariables("PULSAR_SINK_TOPIC","persistent://public/default/sink-topic");
+
 
 
     //Event generator configurations

@@ -21,6 +21,7 @@ public class PulsarClientsCreator {
         return client;
     }
 
+
     public static Consumer<String> createConsumer(PulsarClient client, String topic){
         Consumer<String> consumer = null;
         try{
@@ -92,6 +93,20 @@ public class PulsarClientsCreator {
                     .readerName(Configuration.READER_NAME)
                     .startMessageId(messageId)
                     .startMessageIdInclusive()
+                    .create();
+        } catch (PulsarClientException e) {
+            e.printStackTrace();
+        }
+        return reader;
+    }
+
+    public static Reader<String> createReader(PulsarClient client, String topic, String readerName, MessageId messageId){
+        Reader<String> reader = null;
+        try {
+            reader = client.newReader(Schema.STRING)
+                    .topic(topic)
+                    .readerName(readerName)
+                    .startMessageId(messageId)
                     .create();
         } catch (PulsarClientException e) {
             e.printStackTrace();

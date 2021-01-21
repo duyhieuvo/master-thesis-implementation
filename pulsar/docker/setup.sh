@@ -5,8 +5,8 @@ echo "Start zookeeper cluster"
 docker-compose up -d zookeeper1 zookeeper2 zookeeper3
 echo "Set up the metadata"
 docker-compose up setup
-echo "Start Bookkeeper and broker"
-docker-compose up -d bookie1 bookie2 bookie3 broker1 broker2 cli
+echo "Start Bookkeeper and broker and database"
+docker-compose up -d bookie1 bookie2 bookie3 broker1 broker2 cli postgres_db adminer
 while [[ $(docker inspect -f {{.State.Health.Status}} broker1) != *healthy* ]] || [[ $(docker inspect -f {{.State.Health.Status}} broker2) != *healthy* ]]; do
     echo -ne "\r\033[0KWaiting for brokers to be healthy";
     sleep 1
@@ -29,4 +29,5 @@ winpty docker exec cli bin/pulsar-admin namespaces set-deduplication public/defa
 echo "Create necessary topics"
 winpty docker exec cli bin/pulsar-admin topics create persistent://public/default/reading-position
 winpty docker exec cli bin/pulsar-admin topics create-partitioned-topic persistent://public/default/raw-event --partitions 2
+winpty docker exec cli bin/pulsar-admin topics create-partitioned-topic persistent://public/default/transformed-event --partitions 2
 

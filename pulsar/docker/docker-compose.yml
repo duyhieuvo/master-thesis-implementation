@@ -171,6 +171,23 @@ services:
       - broker1
       - broker2
 
+  postgres_db:
+    image: postgres-db:latest
+    hostname: postgres_db
+    container_name: postgres_db
+    build: ./db
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+  adminer:
+    image: adminer
+    hostname: adminer
+    container_name: adminer
+    ports:
+      - "8081:8080"
 
   event-generator:
     build:
@@ -205,6 +222,7 @@ services:
       SUBSCRIPTION_TYPE: "Failover"
       SUBSCRIPTION_INITIAL_POSITION: "Earliest"
       PRODUCER_NAME: "stream-processor-producer"
+      PULSAR_SINK_TOPIC: "persistent://public/default/transformed-event"
 
   stream-processor-2:
     build:
@@ -221,6 +239,21 @@ services:
       SUBSCRIPTION_TYPE: "Failover"
       SUBSCRIPTION_INITIAL_POSITION: "Earliest"
       PRODUCER_NAME: "stream-processor-producer"
+      PULSAR_SINK_TOPIC: "persistent://public/default/transformed-event"
+
+  stream-aggregator:
+    build:
+      context: ./client
+    image: usecase/pulsar-client:latestlocal
+    hostname: stream-aggregator
+    container_name: stream-aggregator
+    command: stream-aggregator
+    environment:
+      PULSAR_SERVICE_URL: "pulsar://broker1:6650,broker2:6650"
+      PULSAR_SOURCE_TOPIC: "persistent://public/default/transformed-event"
+      READER_NAME: "stream-aggregator"
+      ASSIGNED_PARTITION: "0,1"
+
 
 
 networks:

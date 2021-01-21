@@ -7,7 +7,7 @@
 
     <persistence-unit name="Hibernate_JPA" transaction-type="RESOURCE_LOCAL">
 
-        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+        <provider>org.apache.openjpa.persistence.PersistenceProviderImpl</provider>
 
         <class>util.relationalDB.entity.CurrentBalance</class>
         <class>util.relationalDB.entity.CurrentReadingPosition</class>
@@ -17,10 +17,11 @@
             <property name="javax.persistence.jdbc.user" value="postgres"/>
             <property name="javax.persistence.jdbc.password" value="postgres"/>
             <property name="javax.persistence.jdbc.driver" value="org.postgresql.Driver"/>
-            <property name="hibernate.dialect" value="org.hibernate.dialect.PostgreSQL10Dialect" />
-            <property name="hibernate.show_sql" value="true"/>
+            <property name="jdbc.SynchronizeMappings" value="buildSchema(ForeignKeys=true)"/>
+            <property name="openjpa.jdbc.DBDictionary" value="org.apache.openjpa.jdbc.sql.PostgresDictionary" />
+<!--            <property name="hibernate.show_sql" value="true"/>-->
             <!--<property name="hibernate.format_sql" value="true"/> -->
-            <property name="hibernate.hbm2ddl.auto" value="update"/>
+<!--            <property name="hibernate.hbm2ddl.auto" value="update"/>-->
         </properties>
 
     </persistence-unit>
