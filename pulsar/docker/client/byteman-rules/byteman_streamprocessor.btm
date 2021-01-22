@@ -1,0 +1,8 @@
+RULE Fault injection to the stream processor, simulate application crash between publishing transformed event and acknowledge input event on source stream
+CLASS pulsar.clients.PulsarStreamProcessor
+METHOD bytemanHook(int)
+AT ENTRY
+BIND counter = $1
+IF counter >= 120
+DO debug("Simulate application crash after processing 120 events or more"), killJVM()
+ENDRULE

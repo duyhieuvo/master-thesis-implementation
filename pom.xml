@@ -18,7 +18,6 @@
     <properties>
         <kafka.version>2.6.0</kafka.version>
         <pulsar.version>2.7.0</pulsar.version>
-        <hibernate.version>5.4.27.Final</hibernate.version>
     </properties>
 
     <dependencyManagement>
@@ -48,16 +47,10 @@
             </dependency>
 
             <!-- Relational database dependencies -->
-            <!-- https://mvnrepository.com/artifact/org.hibernate/hibernate-core -->
             <dependency>
-                <groupId>org.hibernate</groupId>
-                <artifactId>hibernate-core</artifactId>
-                <version>${hibernate.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.hibernate</groupId>
-                <artifactId>hibernate-entitymanager</artifactId>
-                <version>${hibernate.version}</version>
+                <groupId>org.apache.openjpa</groupId>
+                <artifactId>openjpa</artifactId>
+                <version>3.1.2</version>
             </dependency>
             <dependency>
                 <groupId>org.postgresql</groupId>

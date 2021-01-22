@@ -23,6 +23,7 @@ public class PulsarEventsGenerator implements EventsPublisher {
     private Producer<String> producerEvent,  producerReadingPosition;
     private Reader<String> reader;
     private ObjectMapper objectMapper;
+    private int counter;
 
     public PulsarEventsGenerator() {
         client = PulsarClientsCreator.createClient();
@@ -30,7 +31,7 @@ public class PulsarEventsGenerator implements EventsPublisher {
         producerEvent = PulsarClientsCreator.createProducer(client,Configuration.PULSAR_SINK_TOPIC);
         producerReadingPosition = PulsarClientsCreator.createProducer(client,Configuration.PULSAR_SOURCE_TOPIC);
         objectMapper = new ObjectMapper();
-
+        counter = 0;
     }
     public int getLastPublishedEvent(){
         int lastPublishedEvent = 0;
@@ -67,6 +68,7 @@ public class PulsarEventsGenerator implements EventsPublisher {
             String eventJson = objectMapper.writeValueAsString(event);
 
             //Create the transaction to publish event along with the corresponding row number in the source CSV file
+            //The transaction feature is not stable yet. Enabling transaction on Pulsar client causes disconnection from Pulsar broker
 //            Transaction txn = client
 //                    .newTransaction()
 //                    .withTransactionTimeout(5, TimeUnit.MINUTES)
@@ -82,6 +84,8 @@ public class PulsarEventsGenerator implements EventsPublisher {
                     .send();
             System.out.println("Publish event: " + eventJson);
 
+            bytemanHook(counter);
+
             //Send the row number in source CSV file
 //            producerReadingPosition.newMessage(txn)
             producerReadingPosition.newMessage()
@@ -90,18 +94,7 @@ public class PulsarEventsGenerator implements EventsPublisher {
             System.out.println("Publish reading position: " + event.get("id"));
             //Commit the transaction
 //            txn.commit().get();
-//
-//            long start = 0;
-//            float elapsed = 0;
-//            int wait = 5;
-//            start = System.currentTimeMillis();
-//            while(true){
-//                elapsed= (System.currentTimeMillis()-start)/1000F;
-//                if(elapsed>wait){
-//                    break;
-//                }
-//            }
-
+            counter++;
         } catch (IllegalArgumentException e){
                 e.printStackTrace();
         } catch (JsonProcessingException e) {
@@ -121,4 +114,9 @@ public class PulsarEventsGenerator implements EventsPublisher {
         int lastPublishedEvent = getLastPublishedEvent();
         CSVSourceEvent.generateEventFromCSV(Configuration.PATH_TO_CSV,this,lastPublishedEvent+1);
     }
+
+    public void bytemanHook(int counter){
+        return;
+    }
+
 }

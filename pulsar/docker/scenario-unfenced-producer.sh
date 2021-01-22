@@ -2,6 +2,8 @@
 
 ./setup.sh
 
-docker-compose up -d event-generator
+docker-compose up event-generator
 docker-compose up -d stream-processor-1
+sleep 3s
+docker-compose up -d stream-processor-2
 docker-compose up -d stream-aggregator

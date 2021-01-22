@@ -19,9 +19,7 @@
             <property name="javax.persistence.jdbc.driver" value="org.postgresql.Driver"/>
             <property name="jdbc.SynchronizeMappings" value="buildSchema(ForeignKeys=true)"/>
             <property name="openjpa.jdbc.DBDictionary" value="org.apache.openjpa.jdbc.sql.PostgresDictionary" />
-<!--            <property name="hibernate.show_sql" value="true"/>-->
-            <!--<property name="hibernate.format_sql" value="true"/> -->
-<!--            <property name="hibernate.hbm2ddl.auto" value="update"/>-->
+            <property name="openjpa.Log" value="SQL=Trace" />
         </properties>
 
     </persistence-unit>

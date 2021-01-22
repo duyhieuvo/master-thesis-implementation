@@ -4,6 +4,8 @@ import pulsar.clients.PulsarAggregator;
 import pulsar.clients.PulsarEventsGenerator;
 import pulsar.clients.PulsarStreamProcessor;
 
+import java.io.IOException;
+
 
 public class RunClient {
     public static void main(String[] args)  {
@@ -16,7 +18,12 @@ public class RunClient {
             pulsarStreamProcessor.transformRawEvent();
         }
         else if ("stream-aggregator".equals(args[0])) {
-            PulsarAggregator pulsarAggregator = new PulsarAggregator();
+            PulsarAggregator pulsarAggregator = null;
+            try {
+                pulsarAggregator = new PulsarAggregator();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
             pulsarAggregator.aggregateAndWriteDataToDB();
         }
     }

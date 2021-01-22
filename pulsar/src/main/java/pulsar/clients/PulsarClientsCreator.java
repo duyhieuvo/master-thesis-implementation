@@ -32,6 +32,7 @@ public class PulsarClientsCreator {
                     .subscriptionName(Configuration.SUBSCRIPTION_NAME)
                     .subscriptionInitialPosition(SubscriptionInitialPosition.valueOf(Configuration.SUBSCRIPTION_INITIAL_POSITION))
                     .subscriptionType(SubscriptionType.valueOf(Configuration.SUBSCRIPTION_TYPE))
+                    .acknowledgmentGroupTime(0,TimeUnit.SECONDS)
                     .subscribe();
 
         } catch (PulsarClientException e) {
@@ -40,24 +41,6 @@ public class PulsarClientsCreator {
         return consumer;
     }
 
-    public static Consumer<String> createConsumer(PulsarClient client, String topic, ConsumerEventListener eventListener){
-        Consumer<String> consumer = null;
-        try{
-
-            consumer =  client.newConsumer(Schema.STRING)
-                    .topic(topic)
-                    .consumerName(Configuration.CONSUMER_NAME)
-                    .consumerEventListener(eventListener)
-                    .subscriptionName(Configuration.SUBSCRIPTION_NAME)
-                    .subscriptionInitialPosition(SubscriptionInitialPosition.valueOf(Configuration.SUBSCRIPTION_INITIAL_POSITION))
-                    .subscriptionType(SubscriptionType.valueOf(Configuration.SUBSCRIPTION_TYPE))
-                    .subscribe();
-
-        } catch (PulsarClientException e) {
-            e.printStackTrace();
-        }
-        return consumer;
-    }
 
     public static Producer<String> createProducer(PulsarClient client, String topic){
         Producer<String> producer = null;
@@ -73,15 +56,15 @@ public class PulsarClientsCreator {
 
         return producer;
     }
-
-    public static Producer<String> createProducer(PulsarClient client, String topic, String partition) throws PulsarClientException {
-        Producer<String>  producer =  client.newProducer(Schema.STRING)
-                .topic(topic)
-                .producerName(Configuration.PRODUCER_NAME + partition)
-                .sendTimeout(0, TimeUnit.SECONDS)
-                .create();
-        return producer;
-    }
+//
+//    public static Producer<String> createProducer(PulsarClient client, String topic, String partition) throws PulsarClientException {
+//        Producer<String>  producer =  client.newProducer(Schema.STRING)
+//                .topic(topic)
+//                .producerName(Configuration.PRODUCER_NAME + partition)
+//                .sendTimeout(0, TimeUnit.SECONDS)
+//                .create();
+//        return producer;
+//    }
 
 
 

@@ -277,24 +277,6 @@ services:
       PRODUCER_ID: "stream-processor-producer-1"
       KAFKA_SINK_TOPIC: "transformed-event"
 
-  stream-processor-2:
-    build:
-      context: ./client
-    image: usecase/kafka-client:latestlocal
-    hostname: stream-processor-2
-    container_name: stream-processor-2
-    command: stream-processor
-    environment:
-      KAFKA_URL: "kafka:9092"
-      CONSUMER_ID: "stream-processor-consumer-2"
-      GROUP_ID: "stream-processor-consumer-group-1"
-      KAFKA_SOURCE_TOPIC: "raw-event"
-      OFFSET_RESET: "earliest"
-      MAX_POLL_RECORDS: 10
-      TRANSACTION_ID: "stream-processor-transaction"
-      PRODUCER_ID: "stream-processor-producer-1"
-      KAFKA_SINK_TOPIC: "transformed-event"
-
   stream-processor-2-zombie-instance:
     build:
       context: ./client
@@ -312,26 +294,6 @@ services:
       TRANSACTION_ID: "stream-processor-transaction"
       PRODUCER_ID: "stream-processor-producer-1"
       KAFKA_SINK_TOPIC: "transformed-event"
-
-  stream-processor-2-crash:
-    build:
-      context: ./client
-    image: usecase/kafka-client:latestlocal
-    hostname: stream-processor-2
-    container_name: stream-processor-2-crash
-    entrypoint: ["java", "-javaagent:/byteman/byteman.jar=script:/byteman/byteman_streamprocessor.btm", "-Dorg.jboss.byteman.debug=true", "-jar", "/opt/kafkaClient.jar", "stream-processor"]
-    environment:
-      KAFKA_URL: "kafka:9092"
-      CONSUMER_ID: "stream-processor-consumer-2"
-      GROUP_ID: "stream-processor-consumer-group-1"
-      KAFKA_SOURCE_TOPIC: "raw-event"
-      OFFSET_RESET: "earliest"
-      MAX_POLL_RECORDS: 10
-      TRANSACTION_ID: "stream-processor-transaction"
-      PRODUCER_ID: "stream-processor-producer-1"
-      KAFKA_SINK_TOPIC: "transformed-event"
-
-
 
   stream-aggregator:
     build:
@@ -355,7 +317,7 @@ services:
     image: usecase/kafka-client:latestlocal
     hostname: stream-aggregator
     container_name: stream-aggregator-crash
-    command: ["java", "-javaagent:/byteman/byteman.jar=script:/byteman/byteman_streamaggregator.btm", "-Dorg.jboss.byteman.debug=true", "-jar", "/opt/kafkaClient.jar", "stream-aggregator"]
+    entrypoint: ["java", "-javaagent:/byteman/byteman.jar=script:/byteman/byteman_streamaggregator.btm", "-Dorg.jboss.byteman.debug=true", "-jar", "/opt/kafkaClient.jar", "stream-aggregator"]
     environment:
       KAFKA_URL: "kafka:9092"
       CONSUMER_ID: "stream-aggregator-consumer-1"

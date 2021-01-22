@@ -10,61 +10,23 @@ import pulsar.configuration.Configuration;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 
 public class PulsarStreamProcessor {
     private PulsarClient client;
-    private Map<Integer, Producer<String>> producers;
+    private Producer<String> producer;
     private Consumer<String> consumer;
     private ObjectMapper objectMapper;
     private int counter;
 
     public PulsarStreamProcessor(){
         client = PulsarClientsCreator.createClient();
-        producers = new HashMap<>();
+        producer = PulsarClientsCreator.createProducer(client,Configuration.PULSAR_SINK_TOPIC);
         objectMapper = new ObjectMapper();
         counter = 0;
-        consumer = PulsarClientsCreator.createConsumer(client, Configuration.PULSAR_SOURCE_TOPIC, new ConsumerEventListener() {
-            @Override
-            public void becameActive(Consumer<?> consumer, int partition) {
-                System.out.println("Partition assigned: " + partition);
-                int count = 0;
-                int maxTries = 10;
-                while(true){
-                    try {
-                        System.out.println("Attempt: "+ count);
-                        producers.put(partition, PulsarClientsCreator.createProducer(client,Configuration.PULSAR_SINK_TOPIC,"partition-"+partition));
-                        System.out.println("Create producer: " + Configuration.PRODUCER_NAME + "partition-" + partition);
-                        break;
-                    } catch (PulsarClientException e) {
-                        long start = System.currentTimeMillis();;
-                        int wait = 5;
-                        while(true){
-                            if(((System.currentTimeMillis()-start)/1000F)>wait){
-                                break;
-                            }
-                        }
-                        if (++count == maxTries){
-                            e.printStackTrace();
-                            break;
-                        }
-                    }
-                }
-
-            }
-
-            @Override
-            public void becameInactive(Consumer<?> consumer, int partition) {
-                System.out.println("Partition revoked: " + partition);
-                if(producers.containsKey(partition)) {
-                    try {
-                        producers.get(partition).close();
-                    } catch (PulsarClientException e) {
-                        e.printStackTrace();
-                    }
-                    producers.remove(partition);
-                }
-            }
-        });
+        consumer = PulsarClientsCreator.createConsumer(client, Configuration.PULSAR_SOURCE_TOPIC);
     }
 
     public void transformRawEvent(){
@@ -76,12 +38,7 @@ public class PulsarStreamProcessor {
         while(true){
             try {
                 message = consumer.receive();
-                String sourcePartitionTopic = message.getTopicName();
-                int sourcePartition = Integer.parseInt(sourcePartitionTopic.substring(sourcePartitionTopic.length()-1));
-                if(!producers.containsKey(sourcePartition)){
-                    System.out.println("The record belongs to a revoked partition => skip");
-                    continue;
-                }
+                counter++;
                 jsonNode = objectMapper.readTree(message.getValue());
                 value = Float.valueOf(jsonNode.get("value").asText());
                 type = jsonNode.get("type").asText();
@@ -98,15 +55,16 @@ public class PulsarStreamProcessor {
 
                 //Publish the transformed event to output topic
 
-                producers.get(sourcePartition).newMessage()
+                producer.newMessage()
                          .key(customerId)
                          .value(objectMapper.writeValueAsString(transformedRecord))
                          .send();
                 System.out.println("Publish transformed event: " + transformedRecord);
 
-
+                bytemanHook(counter);
                 //Acknowledge the consumption of message on input topic
-                 consumer.acknowledge(message);
+                CompletableFuture<Void> ack = consumer.acknowledgeAsync(message);
+                ack.get();
                  System.out.println("Acknowledge input event");
 
             } catch (PulsarClientException e) {
@@ -115,7 +73,15 @@ public class PulsarStreamProcessor {
                 e.printStackTrace();
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e) {
+                e.printStackTrace();
             }
         }
+    }
+
+    public void bytemanHook(int counter){
+        return;
     }
 }

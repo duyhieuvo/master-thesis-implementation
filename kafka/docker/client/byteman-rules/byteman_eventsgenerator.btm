@@ -1,5 +1,5 @@
 RULE Fault injection to the event generator, simulate application crash during a transaction
-CLASS kafka.clients.KafkaStreamProcessor
+CLASS kafka.clients.KafkaEventsGenerator
 METHOD bytemanHook(int)
 AT EXIT
 BIND counter = $1

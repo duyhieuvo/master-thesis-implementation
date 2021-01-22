@@ -207,6 +207,24 @@ services:
       PULSAR_WEB_SERVICE_URL: "http://broker1:8080,broker2:8080"
       PATH_TO_CSV: "/test-data/test_events_multiple_customers.csv"
 
+  event-generator-crash:
+    build:
+      context: ./client
+    image: usecase/pulsar-client:latestlocal
+    hostname: event-generator
+    container_name: event-generator-crash
+    entrypoint: ["java", "-javaagent:/byteman/byteman.jar=script:/byteman/byteman_eventsgenerator.btm", "-Dorg.jboss.byteman.debug=true", "-jar", "/opt/pulsarClient.jar", "event-generator"]
+    volumes:
+      - ./test-data:/test-data
+    environment:
+      PULSAR_SERVICE_URL: "pulsar://broker1:6650,broker2:6650"
+      PULSAR_SOURCE_TOPIC: "persistent://public/default/reading-position"
+      READER_NAME: "event-generator-reader-1"
+      PULSAR_SINK_TOPIC: "persistent://public/default/raw-event"
+      PRODUCER_NAME: "event-generator-producer-1"
+      PULSAR_WEB_SERVICE_URL: "http://broker1:8080,broker2:8080"
+      PATH_TO_CSV: "/test-data/test_events_multiple_customers.csv"
+
   stream-processor-1:
     build:
       context: ./client
@@ -221,7 +239,24 @@ services:
       SUBSCRIPTION_NAME: "stream-processor-subscription"
       SUBSCRIPTION_TYPE: "Failover"
       SUBSCRIPTION_INITIAL_POSITION: "Earliest"
-      PRODUCER_NAME: "stream-processor-producer"
+      PRODUCER_NAME: "stream-processor-producer-1"
+      PULSAR_SINK_TOPIC: "persistent://public/default/transformed-event"
+
+  stream-processor-1-crash:
+    build:
+      context: ./client
+    image: usecase/pulsar-client:latestlocal
+    hostname: stream-processor-1
+    container_name: stream-processor-1-crash
+    entrypoint: ["java", "-javaagent:/byteman/byteman.jar=script:/byteman/byteman_streamprocessor.btm", "-Dorg.jboss.byteman.debug=true", "-jar", "/opt/pulsarClient.jar", "stream-processor"]
+    environment:
+      PULSAR_SERVICE_URL: "pulsar://broker1:6650,broker2:6650"
+      PULSAR_SOURCE_TOPIC: "persistent://public/default/raw-event"
+      CONSUMER_NAME: "stream-processor-consumer-1"
+      SUBSCRIPTION_NAME: "stream-processor-subscription"
+      SUBSCRIPTION_TYPE: "Failover"
+      SUBSCRIPTION_INITIAL_POSITION: "Earliest"
+      PRODUCER_NAME: "stream-processor-producer-1"
       PULSAR_SINK_TOPIC: "persistent://public/default/transformed-event"
 
   stream-processor-2:
@@ -238,7 +273,7 @@ services:
       SUBSCRIPTION_NAME: "stream-processor-subscription"
       SUBSCRIPTION_TYPE: "Failover"
       SUBSCRIPTION_INITIAL_POSITION: "Earliest"
-      PRODUCER_NAME: "stream-processor-producer"
+      PRODUCER_NAME: "stream-processor-producer-2"
       PULSAR_SINK_TOPIC: "persistent://public/default/transformed-event"
 
   stream-aggregator:
@@ -254,6 +289,18 @@ services:
       READER_NAME: "stream-aggregator"
       ASSIGNED_PARTITION: "0,1"
 
+  stream-aggregator-crash:
+    build:
+      context: ./client
+    image: usecase/pulsar-client:latestlocal
+    hostname: stream-aggregator
+    container_name: stream-aggregator-crash
+    entrypoint: ["java", "-javaagent:/byteman/byteman.jar=script:/byteman/byteman_streamaggregator.btm", "-Dorg.jboss.byteman.debug=true", "-jar", "/opt/pulsarClient.jar", "stream-aggregator"]
+    environment:
+      PULSAR_SERVICE_URL: "pulsar://broker1:6650,broker2:6650"
+      PULSAR_SOURCE_TOPIC: "persistent://public/default/transformed-event"
+      READER_NAME: "stream-aggregator"
+      ASSIGNED_PARTITION: "0,1"
 
 
 networks:

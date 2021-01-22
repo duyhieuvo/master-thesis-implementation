@@ -6,12 +6,12 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.pulsar.client.api.*;
 
-import org.apache.pulsar.client.util.MessageIdUtils;
 import pulsar.configuration.Configuration;
 import util.relationalDB.CurrentBalanceDAO;
 import util.relationalDB.entity.CurrentBalance;
 import util.relationalDB.entity.CurrentReadingPosition;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -27,7 +27,7 @@ public class PulsarAggregator {
     private Map<String,Float> customersBalances;
     private int counter;
 
-    public PulsarAggregator(){
+    public PulsarAggregator() throws IOException {
         client = PulsarClientsCreator.createClient();
         readers = new HashMap<>();
         objectMapper = new ObjectMapper();
@@ -49,7 +49,7 @@ public class PulsarAggregator {
             if(!currentReadingPositions.containsKey(assignedPartition)){
                 startPosition = MessageId.earliest;
             }else{
-                startPosition = MessageIdUtils.getMessageId(currentReadingPositions.get(assignedPartition));
+                startPosition = MessageIdUtil.longToMessageId(currentReadingPositions.get(assignedPartition));
             }
             readers.put(assignedPartition,PulsarClientsCreator.createReader(client,Configuration.PULSAR_SOURCE_TOPIC+"-partition-"+assignedPartition,Configuration.READER_NAME+assignedPartition,startPosition));
         }
@@ -64,38 +64,43 @@ public class PulsarAggregator {
             Map<String, CurrentBalance> committedBalanceList = new HashMap<>();
             Map<Integer, CurrentReadingPosition> currentReadingPositionList = new HashMap<>();
             for(Map.Entry<Integer,Reader<String>>  reader : readers.entrySet()){
-                try {
-                    Message<String> msg = reader.getValue().readNext(5, TimeUnit.SECONDS);
-                    if (msg==null){
-                        continue;
+                for(int i = 0; i<10;i++){ //Read messages in batch of ten from each partition before commit the snapshot to relational database
+                    try {
+                        Message<String> msg = reader.getValue().readNext(2, TimeUnit.SECONDS);
+                        if (msg==null){
+                            break;
+                        }
+                        System.out.println(msg.getValue());
+
+                        String sourcePartitionTopic = msg.getTopicName();
+                        int sourcePartition = Integer.parseInt(sourcePartitionTopic.substring(sourcePartitionTopic.length()-1));
+                        JsonNode jsonNode = objectMapper.readTree(msg.getValue());
+                        customerId = jsonNode.get("customer").asText();
+                        newTransactionValue = Float.valueOf(jsonNode.get("value").asText());
+                        newBalanceValue = newTransactionValue + customersBalances.getOrDefault(customerId,0.0f);
+                        //Update the local copy of the current balance
+                        customersBalances.put(customerId,newBalanceValue);
+                        //Update the current balance to send to the database
+                        committedBalanceList.put(customerId,new CurrentBalance(customerId,newBalanceValue,sourcePartition));
+                        counter++;
+
+                        //Update the reading position on source topic to the database
+                        currentReadingPositionList.put(sourcePartition,new CurrentReadingPosition(sourcePartition,MessageIdUtil.messageIdToLong(msg.getMessageId())));
+                    } catch (PulsarClientException e) {
+                        e.printStackTrace();
+                    } catch (JsonMappingException e) {
+                        e.printStackTrace();
+                    } catch (JsonProcessingException e) {
+                        e.printStackTrace();
                     }
-
-                    String sourcePartitionTopic = msg.getTopicName();
-                    int sourcePartition = Integer.parseInt(sourcePartitionTopic.substring(sourcePartitionTopic.length()-1));
-                    JsonNode jsonNode = objectMapper.readTree(msg.getValue());
-                    customerId = jsonNode.get("customer").asText();
-                    newTransactionValue = Float.valueOf(jsonNode.get("value").asText());
-                    newBalanceValue = newTransactionValue + customersBalances.getOrDefault(customerId,0.0f);
-                    //Update the local copy of the current balance
-                    customersBalances.put(customerId,newBalanceValue);
-                    //Update the current balance to send to the database
-                    committedBalanceList.put(customerId,new CurrentBalance(customerId,newBalanceValue,sourcePartition));
-                    counter++;
-
-                    //Update the reading position on source topic to the database
-                    currentReadingPositionList.put(sourcePartition,new CurrentReadingPosition(sourcePartition,MessageIdUtils.getOffset(msg.getMessageId())));
-                } catch (PulsarClientException e) {
-                    e.printStackTrace();
-                } catch (JsonMappingException e) {
-                    e.printStackTrace();
-                } catch (JsonProcessingException e) {
-                    e.printStackTrace();
                 }
+
             }
             if(committedBalanceList.isEmpty()&&currentReadingPositionList.isEmpty()){
                 continue;
             }
             currentBalanceDAO.updateListCustomerBalance(committedBalanceList,currentReadingPositionList,counter);
+            System.out.println("Published: " + committedBalanceList);
         }
     }
 }
