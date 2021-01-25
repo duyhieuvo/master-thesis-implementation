@@ -46,6 +46,13 @@
                 <version>${pulsar.version}</version>
             </dependency>
 
+            <!-- NATS Streaming dependencies -->
+            <dependency>
+                <groupId>io.nats</groupId>
+                <artifactId>java-nats-streaming</artifactId>
+                <version>2.2.3</version>
+            </dependency>
+
             <!-- Relational database dependencies -->
             <dependency>
                 <groupId>org.apache.openjpa</groupId>

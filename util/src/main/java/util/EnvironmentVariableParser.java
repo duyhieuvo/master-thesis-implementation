@@ -15,6 +15,8 @@ public class EnvironmentVariableParser {
                 result = Double.valueOf(env);
             }else if(defaultValue instanceof Float){
                 result = Float.valueOf(env);
+            }else if(defaultValue instanceof Long){
+                result = Long.valueOf(env);
             }else{
                 result = env;
             }

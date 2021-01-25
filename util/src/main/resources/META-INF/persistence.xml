@@ -19,7 +19,7 @@
             <property name="javax.persistence.jdbc.driver" value="org.postgresql.Driver"/>
             <property name="jdbc.SynchronizeMappings" value="buildSchema(ForeignKeys=true)"/>
             <property name="openjpa.jdbc.DBDictionary" value="org.apache.openjpa.jdbc.sql.PostgresDictionary" />
-            <property name="openjpa.Log" value="SQL=Trace" />
+<!--            <property name="openjpa.Log" value="SQL=Trace" />-->
         </properties>
 
     </persistence-unit>

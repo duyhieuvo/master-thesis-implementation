@@ -1,0 +1,8 @@
+RULE Fault injection to the event generator, simulate application crash between publishing an event and the corresponding reading position on the source file
+CLASS nats.clients.NATSEventsGenerator
+METHOD bytemanHook(int)
+AT EXIT
+BIND counter = $1
+IF counter >= 120
+DO debug("Simulate application crash after publishing 120 events or more"), killJVM()
+ENDRULE

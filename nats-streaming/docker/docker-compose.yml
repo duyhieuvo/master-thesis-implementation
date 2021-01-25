@@ -11,6 +11,7 @@ services:
     ports:
       - 14222:4222
       - 18222:8222
+
   nats-streaming-2:
     image: nats-streaming:${VERSION_NATS_STREAMING}
     hostname: nats-streaming-2
@@ -21,6 +22,7 @@ services:
     ports:
       - 24222:4222
       - 28222:8222
+
   nats-streaming-3:
     image: nats-streaming:${VERSION_NATS_STREAMING}
     hostname: nats-streaming-3
@@ -31,6 +33,132 @@ services:
     ports:
       - 34222:4222
       - 38222:8222
+  postgres_db:
+    image: postgres-db:latest
+    hostname: postgres_db
+    container_name: postgres_db
+    build: ./db
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+  adminer:
+    image: adminer
+    hostname: adminer
+    container_name: adminer
+    ports:
+      - "8081:8080"
+
+  event-generator:
+    build:
+      context: ./client
+    image: usecase/nats-client:latestlocal
+    hostname: event-generator
+    container_name: event-generator
+    command: event-generator
+    volumes:
+      - ./test-data:/test-data
+    environment:
+      CLIENT_NAME: "event-generator-client"
+      CLUSTER_ID: "nats-streaming"
+      NATS_URL: "nats://nats-streaming-1:4222,nats://nats-streaming-2:4222,nats://nats-streaming-3:4222"
+      SINK_CHANNEL_NAME: "raw-event"
+      SOURCE_CHANNEL_NAME: "reading-position"
+      # Specify the NATS client to read from the last message on "reading-position" channel to get the position of last published event in CSV source file
+      START_POSITION: "-1"
+      PATH_TO_CSV: "/test-data/test_events_multiple_customers.csv"
+
+
+  event-generator-crash:
+    build:
+      context: ./client
+    image: usecase/nats-client:latestlocal
+    hostname: event-generator
+    container_name: event-generator-crash
+    entrypoint: ["java", "-javaagent:/byteman/byteman.jar=script:/byteman/byteman_eventsgenerator.btm", "-Dorg.jboss.byteman.debug=true", "-jar", "/opt/natsClient.jar", "event-generator"]
+    volumes:
+      - ./test-data:/test-data
+    environment:
+      CLIENT_NAME: "event-generator-client"
+      CLUSTER_ID: "nats-streaming"
+      NATS_URL: "nats://nats-streaming-1:4222,nats://nats-streaming-2:4222,nats://nats-streaming-3:4222"
+      SINK_CHANNEL_NAME: "raw-event"
+      SOURCE_CHANNEL_NAME: "reading-position"
+      # Specify the NATS client to read from the last message on "reading-position" channel to get the position of last published event in CSV source file
+      START_POSITION: "-1"
+      PATH_TO_CSV: "/test-data/test_events_multiple_customers.csv"
+
+  stream-processor:
+    build:
+      context: ./client
+    image: usecase/nats-client:latestlocal
+    hostname: stream-processor
+    container_name: stream-processor
+    command: stream-processor
+    environment:
+      CLIENT_NAME: "stream-processor-client"
+      CLUSTER_ID: "nats-streaming"
+      NATS_URL: "nats://nats-streaming-1:4222,nats://nats-streaming-2:4222,nats://nats-streaming-3:4222"
+      SINK_CHANNEL_NAME: "transformed-event"
+      SOURCE_CHANNEL_NAME: "raw-event"
+      # The stream processor publish transformed events back to NATS.
+      # Therefore, it cannot rely on an external system to both manage the reading position on source channel and persisting transformed event
+      # In this case, the stream processor must use durable subscription to have NATS auto manage reading position based on acknowledgement
+      DURABLE_ENABLE: "true"
+      DURABLE_NAME: "stream-processor-durable"
+      START_POSITION: "0" # Start reading from the beginning of the channel when first starting the subscription
+
+  stream-processor-crash:
+    build:
+      context: ./client
+    image: usecase/nats-client:latestlocal
+    hostname: stream-processor
+    container_name: stream-processor-crash
+    entrypoint: ["java", "-javaagent:/byteman/byteman.jar=script:/byteman/byteman_streamprocessor.btm", "-Dorg.jboss.byteman.debug=true", "-jar", "/opt/natsClient.jar", "stream-processor"]
+    environment:
+      CLIENT_NAME: "stream-processor-client"
+      CLUSTER_ID: "nats-streaming"
+      NATS_URL: "nats://nats-streaming-1:4222,nats://nats-streaming-2:4222,nats://nats-streaming-3:4222"
+      SINK_CHANNEL_NAME: "transformed-event"
+      SOURCE_CHANNEL_NAME: "raw-event"
+      # The stream processor publish transformed events back to NATS.
+      # Therefore, it cannot rely on an external system to both manage the reading position on source channel and persisting transformed event
+      # In this case, the stream processor must use durable subscription to have NATS auto manage reading position based on acknowledgement
+      DURABLE_ENABLE: "true"
+      DURABLE_NAME: "stream-processor-durable"
+      START_POSITION: "0" # Start reading from the beginning of the channel when first starting the subscription
+
+  stream-aggregator:
+    build:
+      context: ./client
+    image: usecase/nats-client:latestlocal
+    hostname: stream-aggregator
+    container_name: stream-aggregator
+    command: stream-aggregator
+    environment:
+      CLIENT_NAME: "stream-aggregator-client"
+      CLUSTER_ID: "nats-streaming"
+      NATS_URL: "nats://nats-streaming-1:4222,nats://nats-streaming-2:4222,nats://nats-streaming-3:4222"
+      SOURCE_CHANNEL_NAME: "transformed-event"
+      DURABLE_ENABLE: "false" # disable durable subscription since the aggregator relies on external relational database to maintain reading position on source stream
+      START_POSITION: "0" # Start reading from the beginning of the channel when first starting the aggregator
+
+  stream-aggregator-crash:
+    build:
+      context: ./client
+    image: usecase/nats-client:latestlocal
+    hostname: stream-aggregator
+    container_name: stream-aggregator-crash
+    entrypoint: ["java", "-javaagent:/byteman/byteman.jar=script:/byteman/byteman_streamaggregator.btm", "-Dorg.jboss.byteman.debug=true", "-jar", "/opt/natsClient.jar", "stream-aggregator"]
+    environment:
+      CLIENT_NAME: "stream-aggregator-client"
+      CLUSTER_ID: "nats-streaming"
+      NATS_URL: "nats://nats-streaming-1:4222,nats://nats-streaming-2:4222,nats://nats-streaming-3:4222"
+      SOURCE_CHANNEL_NAME: "transformed-event"
+      DURABLE_ENABLE: "false" # disable durable subscription since the aggregator relies on external relational database to maintain reading position on source stream
+      START_POSITION: "0" # Start reading from the beginning of the channel when first starting the aggregator
 networks:
   default:
     name: nats-streaming

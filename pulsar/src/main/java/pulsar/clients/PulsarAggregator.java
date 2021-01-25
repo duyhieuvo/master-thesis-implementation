@@ -66,7 +66,7 @@ public class PulsarAggregator {
             for(Map.Entry<Integer,Reader<String>>  reader : readers.entrySet()){
                 for(int i = 0; i<10;i++){ //Read messages in batch of ten from each partition before commit the snapshot to relational database
                     try {
-                        Message<String> msg = reader.getValue().readNext(2, TimeUnit.SECONDS);
+                        Message<String> msg = reader.getValue().readNext(1, TimeUnit.SECONDS);
                         if (msg==null){
                             break;
                         }

@@ -1,0 +1,8 @@
+RULE Fault injection to the stream processor, simulate application crash between publishing transformed event and acknowledge the consumption of the corresponding raw event on source topic
+CLASS nats.clients.NATSStreamProcessor
+METHOD bytemanHook(int)
+AT EXIT
+BIND counter = $1
+IF counter >= 120
+DO debug("Simulate application crash after processing 120 events or more"), killJVM()
+ENDRULE
