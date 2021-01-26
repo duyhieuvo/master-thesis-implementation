@@ -155,6 +155,19 @@ services:
       timeout: 18s
       retries: 10
 
+  setup-transaction:
+    image: apachepulsar/pulsar-all:${PULSAR_VERSION}
+    hostname: setup-transaction
+    container_name: setup-transaction
+    restart: on-failure
+    volumes:
+      - ./conf:/custom-conf
+      - ./scripts:/scripts
+    command: /bin/bash "/scripts/initialize_transaction.sh"
+    depends_on:
+      - zookeeper1
+      - zookeeper2
+      - zookeeper3
 
   cli:
     image: apachepulsar/pulsar-all:${PULSAR_VERSION}

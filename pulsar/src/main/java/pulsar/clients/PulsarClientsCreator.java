@@ -13,7 +13,7 @@ public class PulsarClientsCreator {
         try {
             client = PulsarClient.builder()
                     .serviceUrl(Configuration.PULSAR_SERVICE_URL)
-//                    .enableTransaction(true) //create enable transaction causes disconnection from Pulsar: possible bug
+                    .enableTransaction(true) //create enable transaction causes disconnection from Pulsar: possible bug
                     .build();
         } catch(PulsarClientException e) {
             e.printStackTrace();

@@ -18,6 +18,8 @@ while [[ $(docker inspect -f {{.State.Health.Status}} broker1) != *healthy* ]] |
 done
 echo "Brokers are now fully started"
 
+echo "Set up the transactional metadata"
+docker-compose up setup-transaction
 
 echo "Set the Bookkeeper quorum for the namespace"
 winpty docker exec cli bin/pulsar-admin namespaces set-persistence public/default --bookkeeper-ack-quorum 2 --bookkeeper-ensemble 3 --bookkeeper-write-quorum 3 --ml-mark-delete-max-rate 0

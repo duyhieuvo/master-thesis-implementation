@@ -69,16 +69,16 @@ public class PulsarEventsGenerator implements EventsPublisher {
 
             //Create the transaction to publish event along with the corresponding row number in the source CSV file
             //The transaction feature is not stable yet. Enabling transaction on Pulsar client causes disconnection from Pulsar broker
-//            Transaction txn = client
-//                    .newTransaction()
-//                    .withTransactionTimeout(5, TimeUnit.MINUTES)
-//                    .build()
-//                    .get();
-//            System.out.println(txn);
+            Transaction txn = client
+                    .newTransaction()
+                    .withTransactionTimeout(5, TimeUnit.MINUTES)
+                    .build()
+                    .get();
+            System.out.println(txn);
 
             //Send the event
-//            producerEvent.newMessage(txn)
-            producerEvent.newMessage()
+            producerEvent.newMessage(txn)
+//            producerEvent.newMessage()
                     .key(customerId)
                     .value(eventJson)
                     .send();
@@ -87,13 +87,13 @@ public class PulsarEventsGenerator implements EventsPublisher {
             bytemanHook(counter);
 
             //Send the row number in source CSV file
-//            producerReadingPosition.newMessage(txn)
-            producerReadingPosition.newMessage()
+            producerReadingPosition.newMessage(txn)
+//            producerReadingPosition.newMessage()
                     .value(event.get("id"))
                     .send();
             System.out.println("Publish reading position: " + event.get("id"));
             //Commit the transaction
-//            txn.commit().get();
+            txn.commit().get();
             counter++;
         } catch (IllegalArgumentException e){
                 e.printStackTrace();
@@ -102,11 +102,11 @@ public class PulsarEventsGenerator implements EventsPublisher {
         } catch (PulsarClientException e) {
             e.printStackTrace();
         }
-//        catch (InterruptedException e) {
-//            e.printStackTrace();
-//        } catch (ExecutionException e) {
-//            e.printStackTrace();
-//        }
+        catch (InterruptedException e) {
+            e.printStackTrace();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
     }
 
     public void generateEvents(){
