@@ -3,8 +3,6 @@ package pulsar.clients;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import org.apache.pulsar.client.admin.PulsarAdmin;
-import org.apache.pulsar.client.admin.PulsarAdminException;
 import org.apache.pulsar.client.api.*;
 import org.apache.pulsar.client.api.transaction.Transaction;
 
@@ -12,44 +10,34 @@ import pulsar.configuration.Configuration;
 import util.eventsource.CSVSourceEvent;
 import util.eventsource.EventsPublisher;
 
-import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 public class PulsarEventsGenerator implements EventsPublisher {
     private PulsarClient client;
-    private PulsarAdmin adminClient;
     private Producer<String> producerEvent,  producerReadingPosition;
-    private Reader<String> reader;
+    private Consumer<String> consumerReadingPosition;
     private ObjectMapper objectMapper;
     private int counter;
+    private MessageId lastPublishedReadingPosition;
 
     public PulsarEventsGenerator() {
         client = PulsarClientsCreator.createClient();
-        adminClient = PulsarClientsCreator.createAdminClient();
         producerEvent = PulsarClientsCreator.createProducer(client,Configuration.PULSAR_SINK_TOPIC);
         producerReadingPosition = PulsarClientsCreator.createProducer(client,Configuration.PULSAR_SOURCE_TOPIC);
+        consumerReadingPosition = PulsarClientsCreator.createConsumer(client,Configuration.PULSAR_SOURCE_TOPIC);
         objectMapper = new ObjectMapper();
         counter = 0;
     }
     public int getLastPublishedEvent(){
         int lastPublishedEvent = 0;
-        MessageId messageId = null;
         try {
-            messageId = adminClient.topics().getLastMessageId(Configuration.PULSAR_SOURCE_TOPIC);
-            reader = PulsarClientsCreator.createReader(client,Configuration.PULSAR_SOURCE_TOPIC,messageId);
-            Message<String> message = reader.readNext(10,TimeUnit.SECONDS);
+            Message<String> message= consumerReadingPosition.receive(10,TimeUnit.SECONDS);
             if(message!=null){
                 lastPublishedEvent = Integer.parseInt(message.getValue());
             }
-            reader.close();
-            System.out.println("Last checkpoint row: " + lastPublishedEvent);
-        } catch (PulsarAdminException e) {
-            e.printStackTrace();
         } catch (PulsarClientException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
             e.printStackTrace();
         }
 
@@ -74,7 +62,6 @@ public class PulsarEventsGenerator implements EventsPublisher {
                     .withTransactionTimeout(5, TimeUnit.MINUTES)
                     .build()
                     .get();
-            System.out.println(txn);
 
             //Send the event
             producerEvent.newMessage(txn)
@@ -87,11 +74,18 @@ public class PulsarEventsGenerator implements EventsPublisher {
             bytemanHook(counter);
 
             //Send the row number in source CSV file
-            producerReadingPosition.newMessage(txn)
+            MessageId messageId = producerReadingPosition.newMessage(txn)
 //            producerReadingPosition.newMessage()
                     .value(event.get("id"))
                     .send();
             System.out.println("Publish reading position: " + event.get("id"));
+
+            if(lastPublishedReadingPosition!=null){
+                consumerReadingPosition.acknowledgeCumulativeAsync(lastPublishedReadingPosition,txn);
+                lastPublishedReadingPosition= messageId;
+            }else{
+                lastPublishedReadingPosition= messageId;
+            }
             //Commit the transaction
             txn.commit().get();
             counter++;

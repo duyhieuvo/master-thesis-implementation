@@ -155,20 +155,6 @@ services:
       timeout: 18s
       retries: 10
 
-  setup-transaction:
-    image: apachepulsar/pulsar-all:${PULSAR_VERSION}
-    hostname: setup-transaction
-    container_name: setup-transaction
-    restart: on-failure
-    volumes:
-      - ./conf:/custom-conf
-      - ./scripts:/scripts
-    command: /bin/bash "/scripts/initialize_transaction.sh"
-    depends_on:
-      - zookeeper1
-      - zookeeper2
-      - zookeeper3
-
   cli:
     image: apachepulsar/pulsar-all:${PULSAR_VERSION}
     hostname: cli
@@ -214,10 +200,13 @@ services:
     environment:
       PULSAR_SERVICE_URL: "pulsar://broker1:6650,broker2:6650"
       PULSAR_SOURCE_TOPIC: "persistent://public/default/reading-position"
-      READER_NAME: "event-generator-reader-1"
+      CONSUMER_QUEUE_SIZE: "1"
+      CONSUMER_NAME: "event-generator-consumer-1"
+      SUBSCRIPTION_NAME: "event-generator-subscription"
+      SUBSCRIPTION_TYPE: "Exclusive"
+      SUBSCRIPTION_INITIAL_POSITION: "Earliest"
       PULSAR_SINK_TOPIC: "persistent://public/default/raw-event"
       PRODUCER_NAME: "event-generator-producer-1"
-      PULSAR_WEB_SERVICE_URL: "http://broker1:8080,broker2:8080"
       PATH_TO_CSV: "/test-data/test_events_multiple_customers.csv"
 
   event-generator-crash:
@@ -232,10 +221,13 @@ services:
     environment:
       PULSAR_SERVICE_URL: "pulsar://broker1:6650,broker2:6650"
       PULSAR_SOURCE_TOPIC: "persistent://public/default/reading-position"
-      READER_NAME: "event-generator-reader-1"
+      CONSUMER_QUEUE_SIZE: "1"
+      CONSUMER_NAME: "event-generator-consumer-1"
+      SUBSCRIPTION_NAME: "event-generator-subscription"
+      SUBSCRIPTION_TYPE: "Exclusive"
+      SUBSCRIPTION_INITIAL_POSITION: "Earliest"
       PULSAR_SINK_TOPIC: "persistent://public/default/raw-event"
       PRODUCER_NAME: "event-generator-producer-1"
-      PULSAR_WEB_SERVICE_URL: "http://broker1:8080,broker2:8080"
       PATH_TO_CSV: "/test-data/test_events_multiple_customers.csv"
 
   stream-processor-1:

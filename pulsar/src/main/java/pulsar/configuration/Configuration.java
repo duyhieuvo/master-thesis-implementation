@@ -5,13 +5,14 @@ import util.EnvironmentVariableParser;
 public interface Configuration {
     //General Pulsar configurations
     String PULSAR_SERVICE_URL = (String) EnvironmentVariableParser.getEnvironmentVariables("PULSAR_SERVICE_URL","pulsar://localhost:6650");
-    String PULSAR_WEB_SERVICE_URL = (String) EnvironmentVariableParser.getEnvironmentVariables("PULSAR_WEB_SERVICE_URL","http://localhost:8080");
 
     //Pulsar consumer configurations
     String CONSUMER_NAME = (String) EnvironmentVariableParser.getEnvironmentVariables("CONSUMER_NAME","consumer-1");
     String SUBSCRIPTION_NAME = (String) EnvironmentVariableParser.getEnvironmentVariables("SUBSCRIPTION_NAME","default-subscription");
     String SUBSCRIPTION_TYPE = (String) EnvironmentVariableParser.getEnvironmentVariables("SUBSCRIPTION_TYPE","Exclusive");
     String SUBSCRIPTION_INITIAL_POSITION = (String) EnvironmentVariableParser.getEnvironmentVariables("SUBSCRIPTION_INITIAL_POSITION","Earliest");
+    Integer CONSUMER_QUEUE_SIZE = (Integer) EnvironmentVariableParser.getEnvironmentVariables("CONSUMER_QUEUE_SIZE",1000);
+
 
     //Pulsar reader configuration
     String READER_NAME = (String) EnvironmentVariableParser.getEnvironmentVariables("READER_NAME","reader-1");

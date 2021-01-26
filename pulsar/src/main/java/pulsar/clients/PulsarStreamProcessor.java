@@ -6,13 +6,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.pulsar.client.api.*;
+import org.apache.pulsar.client.api.transaction.Transaction;
 import pulsar.configuration.Configuration;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class PulsarStreamProcessor {
     private PulsarClient client;
@@ -51,11 +49,15 @@ public class PulsarStreamProcessor {
                 transformedRecord.put("customer",customerId);
                 transformedRecord.put("value", value);
 
-
+                Transaction txn = client
+                        .newTransaction()
+                        .withTransactionTimeout(5, TimeUnit.MINUTES)
+                        .build()
+                        .get();
 
                 //Publish the transformed event to output topic
 
-                producer.newMessage()
+                producer.newMessage(txn)
                          .key(customerId)
                          .value(objectMapper.writeValueAsString(transformedRecord))
                          .send();
@@ -63,9 +65,9 @@ public class PulsarStreamProcessor {
 
                 bytemanHook(counter);
                 //Acknowledge the consumption of message on input topic
-                CompletableFuture<Void> ack = consumer.acknowledgeAsync(message);
-                ack.get();
-                 System.out.println("Acknowledge input event");
+                consumer.acknowledgeAsync(message.getMessageId(),txn);
+                txn.commit().get();
+                System.out.println("Acknowledge input event");
 
             } catch (PulsarClientException e) {
                 e.printStackTrace();

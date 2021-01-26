@@ -1,6 +1,5 @@
 package pulsar.clients;
 
-import org.apache.pulsar.client.admin.PulsarAdmin;
 import org.apache.pulsar.client.api.*;
 import pulsar.configuration.Configuration;
 
@@ -33,6 +32,7 @@ public class PulsarClientsCreator {
                     .subscriptionInitialPosition(SubscriptionInitialPosition.valueOf(Configuration.SUBSCRIPTION_INITIAL_POSITION))
                     .subscriptionType(SubscriptionType.valueOf(Configuration.SUBSCRIPTION_TYPE))
                     .acknowledgmentGroupTime(0,TimeUnit.SECONDS)
+                    .receiverQueueSize(Configuration.CONSUMER_QUEUE_SIZE)
                     .subscribe();
 
         } catch (PulsarClientException e) {
@@ -56,16 +56,6 @@ public class PulsarClientsCreator {
 
         return producer;
     }
-//
-//    public static Producer<String> createProducer(PulsarClient client, String topic, String partition) throws PulsarClientException {
-//        Producer<String>  producer =  client.newProducer(Schema.STRING)
-//                .topic(topic)
-//                .producerName(Configuration.PRODUCER_NAME + partition)
-//                .sendTimeout(0, TimeUnit.SECONDS)
-//                .create();
-//        return producer;
-//    }
-
 
 
     public static Reader<String> createReader(PulsarClient client, String topic, MessageId messageId){
@@ -95,17 +85,5 @@ public class PulsarClientsCreator {
             e.printStackTrace();
         }
         return reader;
-    }
-
-    public static PulsarAdmin createAdminClient(){
-        PulsarAdmin admin = null;
-        try {
-            admin = PulsarAdmin.builder()
-                               .serviceHttpUrl(Configuration.PULSAR_WEB_SERVICE_URL)
-                               .build();
-        } catch (PulsarClientException e) {
-            e.printStackTrace();
-        }
-        return admin;
     }
 }
