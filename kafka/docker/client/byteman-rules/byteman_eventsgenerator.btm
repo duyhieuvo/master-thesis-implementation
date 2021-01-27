@@ -1,4 +1,4 @@
-RULE Fault injection to the event generator, simulate application crash during a transaction
+RULE Fault injection to the event generator, simulate application crash during a transaction to publish event and the corresponding reading position on source CSV file.
 CLASS kafka.clients.KafkaEventsGenerator
 METHOD bytemanHook(int)
 AT EXIT

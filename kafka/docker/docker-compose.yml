@@ -220,6 +220,7 @@ services:
       KAFKA_SINK_TOPIC: "raw-event"
       PATH_TO_CSV: "/test-data/test_events_multiple_customers.csv"
 
+  #Container with Byteman failure injection enabled
   event-generator-crash:
     build:
       context: ./client
@@ -259,6 +260,7 @@ services:
       PRODUCER_ID: "stream-processor-producer-1"
       KAFKA_SINK_TOPIC: "transformed-event"
 
+  #Container with Byteman failure injection enabled
   stream-processor-1-crash:
     build:
       context: ./client
@@ -277,13 +279,14 @@ services:
       PRODUCER_ID: "stream-processor-producer-1"
       KAFKA_SINK_TOPIC: "transformed-event"
 
-  stream-processor-2-zombie-instance:
+  #Container with Byteman failure injection enabled
+  stream-processor-2-partition-revoked:
     build:
       context: ./client
     image: usecase/kafka-client:latestlocal
-    hostname: stream-processor-2-zombie-instance
-    container_name: stream-processor-2-zombie-instance
-    entrypoint: ["java", "-javaagent:/byteman/byteman.jar=script:/byteman/byteman_fencedproducer.btm", "-Dorg.jboss.byteman.debug=true", "-jar", "/opt/kafkaClient.jar", "stream-processor"]
+    hostname: stream-processor-2-partition-revoked
+    container_name: stream-processor-2-partition-revoked
+    entrypoint: ["java", "-javaagent:/byteman/byteman.jar=script:/byteman/byteman_duplicatedproducer.btm", "-Dorg.jboss.byteman.debug=true", "-jar", "/opt/kafkaClient.jar", "stream-processor"]
     environment:
       KAFKA_URL: "kafka:9092"
       CONSUMER_ID: "stream-processor-consumer-2"
@@ -311,6 +314,7 @@ services:
       MAX_POLL_RECORDS: 100
       ASSIGNED_PARTITION: "0,1"
 
+  #Container with Byteman failure injection enabled
   stream-aggregator-crash:
     build:
       context: ./client

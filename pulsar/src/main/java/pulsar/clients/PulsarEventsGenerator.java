@@ -19,7 +19,7 @@ public class PulsarEventsGenerator implements EventsPublisher {
     private Producer<String> producerEvent,  producerReadingPosition;
     private Consumer<String> consumerReadingPosition;
     private ObjectMapper objectMapper;
-    private int counter;
+    private int counter; //The counter variable for Byteman failure injection
     private MessageId lastPublishedReadingPosition;
 
     public PulsarEventsGenerator() {
@@ -30,12 +30,15 @@ public class PulsarEventsGenerator implements EventsPublisher {
         objectMapper = new ObjectMapper();
         counter = 0;
     }
+
+    //Get the last processed line in the CSV source file from the "reading-position" Pulsar topic
     public int getLastPublishedEvent(){
         int lastPublishedEvent = 0;
         try {
             Message<String> message= consumerReadingPosition.receive(10,TimeUnit.SECONDS);
             if(message!=null){
                 lastPublishedEvent = Integer.parseInt(message.getValue());
+                lastPublishedReadingPosition = message.getMessageId();
             }
         } catch (PulsarClientException e) {
             e.printStackTrace();
@@ -56,7 +59,6 @@ public class PulsarEventsGenerator implements EventsPublisher {
             String eventJson = objectMapper.writeValueAsString(event);
 
             //Create the transaction to publish event along with the corresponding row number in the source CSV file
-            //The transaction feature is not stable yet. Enabling transaction on Pulsar client causes disconnection from Pulsar broker
             Transaction txn = client
                     .newTransaction()
                     .withTransactionTimeout(5, TimeUnit.MINUTES)
@@ -65,21 +67,23 @@ public class PulsarEventsGenerator implements EventsPublisher {
 
             //Send the event
             producerEvent.newMessage(txn)
-//            producerEvent.newMessage()
                     .key(customerId)
                     .value(eventJson)
                     .send();
             System.out.println("Publish event: " + eventJson);
 
+            //Add the Byteman hook here to simulate the application crash during the transaction
             bytemanHook(counter);
 
-            //Send the row number in source CSV file
+            //Send the row number in source CSV file and get the returned message ID when the send operation is successful
             MessageId messageId = producerReadingPosition.newMessage(txn)
-//            producerReadingPosition.newMessage()
                     .value(event.get("id"))
                     .send();
             System.out.println("Publish reading position: " + event.get("id"));
 
+            //Acknowledge message in the reading position up to the message before the newly published reading position
+            //When the instance is restarted, its consumer will receive the first unacknowledged message on "reading-position" topic from Pulsar
+            //which is the newly published reading position
             if(lastPublishedReadingPosition!=null){
                 consumerReadingPosition.acknowledgeCumulativeAsync(lastPublishedReadingPosition,txn);
                 lastPublishedReadingPosition= messageId;

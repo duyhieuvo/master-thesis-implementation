@@ -4,6 +4,7 @@ import org.apache.pulsar.client.api.MessageId;
 
 import java.io.IOException;
 
+//Helper class to convert between Pulsar MessageId and Long value
 public class MessageIdUtil {
     public static MessageId longToMessageId(long l) throws IOException {
         byte[] result = new byte[Long.BYTES];

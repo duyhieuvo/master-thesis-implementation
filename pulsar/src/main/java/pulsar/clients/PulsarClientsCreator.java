@@ -7,12 +7,13 @@ import java.util.concurrent.TimeUnit;
 
 public class PulsarClientsCreator {
 
+    //Pulsar client creator
     public static PulsarClient createClient(){
         PulsarClient client = null;
         try {
             client = PulsarClient.builder()
                     .serviceUrl(Configuration.PULSAR_SERVICE_URL)
-                    .enableTransaction(true) //create enable transaction causes disconnection from Pulsar: possible bug
+                    .enableTransaction(true)
                     .build();
         } catch(PulsarClientException e) {
             e.printStackTrace();
@@ -20,7 +21,9 @@ public class PulsarClientsCreator {
         return client;
     }
 
-
+    //Pulsar consumer creator, the consumer name is taken from environment variable
+    //Each Pulsar consumer can only consume from topics specified when initializing
+    //Therefore, topic is specified as a parameter here
     public static Consumer<String> createConsumer(PulsarClient client, String topic){
         Consumer<String> consumer = null;
         try{
@@ -41,7 +44,9 @@ public class PulsarClientsCreator {
         return consumer;
     }
 
-
+    //Pulsar producer creator, the producer name is taken from environment variable
+    //Each Pulsar producer can only produce to a topic specified when initializing
+    //Therefore, topic is specified as a parameter here
     public static Producer<String> createProducer(PulsarClient client, String topic){
         Producer<String> producer = null;
         try {
@@ -57,22 +62,8 @@ public class PulsarClientsCreator {
         return producer;
     }
 
-
-    public static Reader<String> createReader(PulsarClient client, String topic, MessageId messageId){
-        Reader<String> reader = null;
-        try {
-            reader = client.newReader(Schema.STRING)
-                    .topic(topic)
-                    .readerName(Configuration.READER_NAME)
-                    .startMessageId(messageId)
-                    .startMessageIdInclusive()
-                    .create();
-        } catch (PulsarClientException e) {
-            e.printStackTrace();
-        }
-        return reader;
-    }
-
+    //Pulsar reader creator. MessageId of the starting position to be consume in the topic must be specify
+    //Messages after the specified messageId will be read by this reader
     public static Reader<String> createReader(PulsarClient client, String topic, String readerName, MessageId messageId){
         Reader<String> reader = null;
         try {

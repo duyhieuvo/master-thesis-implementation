@@ -8,7 +8,7 @@ RUN mkdir -p /byteman
 ADD /byteman-rules/byteman_eventsgenerator.btm /byteman/byteman_eventsgenerator.btm
 ADD /byteman-rules/byteman_streamprocessor.btm /byteman/byteman_streamprocessor.btm
 ADD /byteman-rules/byteman_streamaggregator.btm /byteman/byteman_streamaggregator.btm
-ADD /byteman-rules/byteman_fencedproducer.btm /byteman/byteman_fencedproducer.btm
+ADD /byteman-rules/byteman_duplicatedproducer.btm /byteman/byteman_duplicatedproducer.btm
 
 #Download byteman jar file for failure injection
 RUN curl -o byteman.zip https://downloads.jboss.org/byteman/4.0.13/byteman-download-4.0.13-bin.zip

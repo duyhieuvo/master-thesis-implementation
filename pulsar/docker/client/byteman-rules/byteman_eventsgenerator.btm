@@ -1,4 +1,4 @@
-RULE Fault injection to the event generator, simulate application crash between publishing event and the corresponding reading position on source CSV file
+RULE Fault injection to the event generator, simulate application crash during a transaction between publishing event and the corresponding reading position on source CSV file
 CLASS pulsar.clients.PulsarEventsGenerator
 METHOD bytemanHook(int)
 AT EXIT

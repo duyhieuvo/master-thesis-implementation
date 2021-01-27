@@ -23,7 +23,7 @@ public class KafkaAggregator {
     private ObjectMapper objectMapper;
     private CurrentBalanceDAO currentBalanceDAO;
     private Map<String,Float> customersBalances;
-    private int counter;
+    private int counter; //The counter variable for Byteman failure injection
 
     public KafkaAggregator(){
         consumer = KafkaClientsCreator.createConsumer();
@@ -32,20 +32,20 @@ public class KafkaAggregator {
         counter = 0;
 
 
-        //Get the list of assigned partitions
+        //Get the list of assigned partitions from environment variable
         List<Integer> assignedPartitions = Arrays.asList(Configuration.ASSIGNED_PARTITION.split(",")).stream().map(Integer::parseInt).collect(Collectors.toList());
 
-        //Get current balance from the database
+        //Get current balances of customers on the assigned partitions from the database
         customersBalances = currentBalanceDAO.getCurrentBalance(assignedPartitions);
 
-        //Assign the consumer to the defined partitions of the topic
+        //Assign the Kafka consumer to the assigned partitions of the topic
         Collection<TopicPartition> topicPartitions = new ArrayList<>();
         for(Integer assignedPartition : assignedPartitions){
             topicPartitions.add(new TopicPartition(Configuration.KAFKA_SOURCE_TOPIC,assignedPartition));
         }
         consumer.assign(topicPartitions);
 
-        //Get current reading position on each partition and set the consumer to that reading position
+        //Get current reading position on each partition from the database and set the consumer to that reading position
         Map<Integer,Long> currentReadingPositions = currentBalanceDAO.getCurrentReadingPosition(assignedPartitions);
         for(Map.Entry<Integer,Long> currentReadingPosition : currentReadingPositions.entrySet()){
             consumer.seek(new TopicPartition(Configuration.KAFKA_SOURCE_TOPIC,currentReadingPosition.getKey()),currentReadingPosition.getValue());
@@ -61,6 +61,7 @@ public class KafkaAggregator {
         while(true){
             Map<String,CurrentBalance> committedBalanceList = new HashMap<>();
             Map<Integer,CurrentReadingPosition> currentReadingPositionList;
+
             ConsumerRecords<String, String> consumerRecords = consumer.poll(Duration.ofSeconds(10));
             if(consumerRecords.isEmpty()){
                 continue;
@@ -71,8 +72,10 @@ public class KafkaAggregator {
                     customerId = jsonNode.get("customer").asText();
                     newTransactionValue = Float.valueOf(jsonNode.get("value").asText());
                     newBalanceValue = newTransactionValue + customersBalances.getOrDefault(customerId,0.0f);
+
                     //Update the local copy of the current balance
                     customersBalances.put(customerId,newBalanceValue);
+
                     //Update the current balance to send to the database
                     committedBalanceList.put(customerId,new CurrentBalance(customerId,newBalanceValue,consumerRecord.partition()));
                     counter++;
@@ -80,16 +83,18 @@ public class KafkaAggregator {
                     e.printStackTrace();
                 }
             }
+            //Update the current reading position on the Kafka source topic to send to the database
             currentReadingPositionList = getOffsetToCommitOnSourceTopic(consumerRecords);
-            for(Map.Entry<Integer,CurrentReadingPosition> read: currentReadingPositionList.entrySet()){
-                System.out.println(read.getKey() + read.getValue().getCurrentReadingPosition());
-            }
+
+            //Send the current snapshot of the balance and current reading position of the processed batch of records to database
             currentBalanceDAO.updateListCustomerBalance(committedBalanceList,currentReadingPositionList,counter);
 
+            System.out.println("Published: " + committedBalanceList);
         }
 
     }
 
+    //Helper method to retrieve offset numbers of the last messages from each partition in the newly pull batch of records.
     public Map<Integer,CurrentReadingPosition> getOffsetToCommitOnSourceTopic(ConsumerRecords records){
         Map<Integer,CurrentReadingPosition> offsetsToCommit = new HashMap<>();
         Set<TopicPartition> topicPartitionSet = records.partitions();

@@ -209,6 +209,7 @@ services:
       PRODUCER_NAME: "event-generator-producer-1"
       PATH_TO_CSV: "/test-data/test_events_multiple_customers.csv"
 
+  #Container with Byteman failure injection enabled
   event-generator-crash:
     build:
       context: ./client
@@ -247,6 +248,7 @@ services:
       PRODUCER_NAME: "stream-processor-producer-1"
       PULSAR_SINK_TOPIC: "persistent://public/default/transformed-event"
 
+  #Container with Byteman failure injection enabled
   stream-processor-1-crash:
     build:
       context: ./client
@@ -264,13 +266,14 @@ services:
       PRODUCER_NAME: "stream-processor-producer-1"
       PULSAR_SINK_TOPIC: "persistent://public/default/transformed-event"
 
-  stream-processor-2:
+  #Container with Byteman failure injection enabled
+  stream-processor-2-partition-revoked:
     build:
       context: ./client
     image: usecase/pulsar-client:latestlocal
-    hostname: stream-processor-2
-    container_name: stream-processor-2
-    command: stream-processor
+    hostname: stream-processor-2-partition-revoked
+    container_name: stream-processor-2-partition-revoked
+    entrypoint: ["java", "-javaagent:/byteman/byteman.jar=script:/byteman/byteman_duplicatedproducer.btm", "-Dorg.jboss.byteman.debug=true", "-jar", "/opt/pulsarClient.jar", "stream-processor"]
     environment:
       PULSAR_SERVICE_URL: "pulsar://broker1:6650,broker2:6650"
       PULSAR_SOURCE_TOPIC: "persistent://public/default/raw-event"
@@ -294,6 +297,7 @@ services:
       READER_NAME: "stream-aggregator"
       ASSIGNED_PARTITION: "0,1"
 
+  #Container with Byteman failure injection enabled
   stream-aggregator-crash:
     build:
       context: ./client

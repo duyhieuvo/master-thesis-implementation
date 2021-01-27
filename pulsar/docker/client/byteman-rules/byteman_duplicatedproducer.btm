@@ -1,0 +1,8 @@
+RULE Briefly pause the stream processor instance after receiving the full queue of 1000 messages from Pulsar to give the other instance time to start and trigger the rebalance of partitions among two instances. In this case, some messages on the queue of this instance which belongs to the reassigned partition will be redelivered to the other instance. As a result, there are two instances which process the same messages
+CLASS pulsar.clients.PulsarStreamProcessor
+METHOD bytemanHookPartitionRevoked(int)
+AT ENTRY
+BIND counter = $1
+IF counter == 0
+DO debug("Simulate application briefly pause"), delay(5000)
+ENDRULE

@@ -10,6 +10,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import java.util.Properties;
 
 public class KafkaClientsCreator {
+    //Kafka producer creator with the transaction ID obtained from environment variable
     public static KafkaProducer<String,String> createProducer(){
         Properties props = new Properties();
         props.put(ProducerConfig.CLIENT_ID_CONFIG, Configuration.PRODUCER_ID);
@@ -27,6 +28,7 @@ public class KafkaClientsCreator {
         return producer;
     }
 
+    //Kafka producer creator with dynamic transaction ID obtained from the assigned partition of the application instance
     public static KafkaProducer<String,String> createProducer(String partition){
         Properties props = new Properties();
         props.put(ProducerConfig.CLIENT_ID_CONFIG, Configuration.PRODUCER_ID);
@@ -44,6 +46,7 @@ public class KafkaClientsCreator {
         return producer;
     }
 
+    //Kafka consumer creator
     public static KafkaConsumer<String,String> createConsumer(){
         Properties props = new Properties();
         props.put(ConsumerConfig.CLIENT_ID_CONFIG, Configuration.CONSUMER_ID);

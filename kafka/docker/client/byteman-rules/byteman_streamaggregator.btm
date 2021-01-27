@@ -1,4 +1,4 @@
-RULE Fault injection to the stream aggregator, simulate application crash during a transaction
+RULE Fault injection to the stream aggregator, simulate application crash during a transaction to commit the snapshot of current balance and the corresponding reading position on Kafka source topic.
 CLASS util.relationalDB.CurrentBalanceDAO
 METHOD bytemanHook(int)
 AT EXIT
