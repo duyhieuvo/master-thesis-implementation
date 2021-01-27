@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+
+//DAO class to get current balance and corresponding reading position as well as to update the snapshot of the newly calculated balances
 public class CurrentBalanceDAO {
     private static final javax.persistence.EntityManagerFactory ENTITY_MANAGER_FACTORY = Persistence
             .createEntityManagerFactory("Hibernate_JPA");
@@ -57,6 +59,7 @@ public class CurrentBalanceDAO {
             }
             //Add byteman hook to simulate application crash during a transaction
             bytemanHook(counter);
+
             for(Map.Entry<Integer,CurrentReadingPosition> currentReadingPosition : currentReadingPositionList.entrySet()){
                 entityManager.merge(currentReadingPosition.getValue());
             }

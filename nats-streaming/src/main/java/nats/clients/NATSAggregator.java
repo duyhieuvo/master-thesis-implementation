@@ -57,9 +57,12 @@ public class NATSAggregator {
         if(currentReadingPositions.containsKey(-1)){
             currentReadingPosition = currentReadingPositions.get(-1);
         }
+
+        //Create a subscription on the "transformed-event" channel to read transformed event and aggregate the current balance
         Subscription aggregatorSubscription = NATSClientsCreator.subscribeToChannel(natsClient, Configuration.SOURCE_CHANNEL_NAME,aggregateAndPublishBalance(),currentReadingPosition);
     }
 
+    //Message handler of subscription on "transformed-event" to aggregate and publish snapshot of the current balance to the database
     public MessageHandler aggregateAndPublishBalance(){
         return new MessageHandler() {
             @Override
@@ -93,13 +96,20 @@ public class NATSAggregator {
                     //Update the local copy of the current balance
                     customersBalances.put(customerId,newBalanceValue);
 //                    synchronized (lock) {
+
                     //Update the current balance to send to the database
                     committedBalanceList.put(customerId, new CurrentBalance(customerId, newBalanceValue, -1));
                     committedReadingPositionList.put(-1, new CurrentReadingPosition(-1, message.getSequence() + 1));
                     counter++;
 //                    }
+
+                    //Send the current snapshot of the balance and current reading position of the processed batch of records to database
                     currentBalanceDAO.updateListCustomerBalance(committedBalanceList,committedReadingPositionList,counter);
+
+                    //Store the sequence number of the last processed message to drop it if the server resend it
                     lastProcessedMessage = message.getSequence();
+
+                    //Acknowledge successful consumption of the message with the server to receive the next message
                     message.ack();
                 } catch (JsonProcessingException e) {
                     e.printStackTrace();

@@ -17,7 +17,7 @@ public class CSVSourceEvent {
         }
     }
 
-
+    //Method to read the csv file and use an EventPublisher to publish event to an ESP platform
     public static void generateEventFromCSV(String pathToFile, EventsPublisher eventsPublisher, int startPosition){
         try {
             String[] headers = readHeaders((pathToFile));

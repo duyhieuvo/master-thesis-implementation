@@ -62,15 +62,16 @@ services:
       - ./test-data:/test-data
     environment:
       CLIENT_NAME: "event-generator-client"
-      CLUSTER_ID: "nats-streaming"
+      CLUSTER_ID: "nats-streaming" #Cluster Id must match the cluster ID of the running NATS Streaming cluster which is configured in the server conf files
       NATS_URL: "nats://nats-streaming-1:4222,nats://nats-streaming-2:4222,nats://nats-streaming-3:4222"
       SINK_CHANNEL_NAME: "raw-event"
       SOURCE_CHANNEL_NAME: "reading-position"
       # Specify the NATS client to read from the last message on "reading-position" channel to get the position of last published event in CSV source file
-      START_POSITION: "-1"
+      START_POSITION: "-1" #To always read the last message on the "reading-position" channel which is the latest checkpointed reading position on the source file
       PATH_TO_CSV: "/test-data/test_events_multiple_customers.csv"
 
 
+  #Container with Byteman failure injection enabled
   event-generator-crash:
     build:
       context: ./client
@@ -82,12 +83,12 @@ services:
       - ./test-data:/test-data
     environment:
       CLIENT_NAME: "event-generator-client"
-      CLUSTER_ID: "nats-streaming"
+      CLUSTER_ID: "nats-streaming" #Cluster Id must match the cluster ID of the running NATS Streaming cluster which is configured in the server conf files
       NATS_URL: "nats://nats-streaming-1:4222,nats://nats-streaming-2:4222,nats://nats-streaming-3:4222"
       SINK_CHANNEL_NAME: "raw-event"
       SOURCE_CHANNEL_NAME: "reading-position"
       # Specify the NATS client to read from the last message on "reading-position" channel to get the position of last published event in CSV source file
-      START_POSITION: "-1"
+      START_POSITION: "-1" #To always read the last message on the "reading-position" channel which is the latest checkpointed reading position on the source file
       PATH_TO_CSV: "/test-data/test_events_multiple_customers.csv"
 
   stream-processor:
@@ -99,7 +100,7 @@ services:
     command: stream-processor
     environment:
       CLIENT_NAME: "stream-processor-client"
-      CLUSTER_ID: "nats-streaming"
+      CLUSTER_ID: "nats-streaming" #Cluster Id must match the cluster ID of the running NATS Streaming cluster which is configured in the server conf files
       NATS_URL: "nats://nats-streaming-1:4222,nats://nats-streaming-2:4222,nats://nats-streaming-3:4222"
       SINK_CHANNEL_NAME: "transformed-event"
       SOURCE_CHANNEL_NAME: "raw-event"
@@ -110,6 +111,7 @@ services:
       DURABLE_NAME: "stream-processor-durable"
       START_POSITION: "0" # Start reading from the beginning of the channel when first starting the subscription
 
+  #Container with Byteman failure injection enabled
   stream-processor-crash:
     build:
       context: ./client
@@ -119,7 +121,7 @@ services:
     entrypoint: ["java", "-javaagent:/byteman/byteman.jar=script:/byteman/byteman_streamprocessor.btm", "-Dorg.jboss.byteman.debug=true", "-jar", "/opt/natsClient.jar", "stream-processor"]
     environment:
       CLIENT_NAME: "stream-processor-client"
-      CLUSTER_ID: "nats-streaming"
+      CLUSTER_ID: "nats-streaming" #Cluster Id must match the cluster ID of the running NATS Streaming cluster which is configured in the server conf files
       NATS_URL: "nats://nats-streaming-1:4222,nats://nats-streaming-2:4222,nats://nats-streaming-3:4222"
       SINK_CHANNEL_NAME: "transformed-event"
       SOURCE_CHANNEL_NAME: "raw-event"
@@ -139,12 +141,13 @@ services:
     command: stream-aggregator
     environment:
       CLIENT_NAME: "stream-aggregator-client"
-      CLUSTER_ID: "nats-streaming"
+      CLUSTER_ID: "nats-streaming" #Cluster Id must match the cluster ID of the running NATS Streaming cluster which is configured in the server conf files
       NATS_URL: "nats://nats-streaming-1:4222,nats://nats-streaming-2:4222,nats://nats-streaming-3:4222"
       SOURCE_CHANNEL_NAME: "transformed-event"
       DURABLE_ENABLE: "false" # disable durable subscription since the aggregator relies on external relational database to maintain reading position on source stream
       START_POSITION: "0" # Start reading from the beginning of the channel when first starting the aggregator
 
+  #Container with Byteman failure injection enabled
   stream-aggregator-crash:
     build:
       context: ./client
@@ -154,7 +157,7 @@ services:
     entrypoint: ["java", "-javaagent:/byteman/byteman.jar=script:/byteman/byteman_streamaggregator.btm", "-Dorg.jboss.byteman.debug=true", "-jar", "/opt/natsClient.jar", "stream-aggregator"]
     environment:
       CLIENT_NAME: "stream-aggregator-client"
-      CLUSTER_ID: "nats-streaming"
+      CLUSTER_ID: "nats-streaming" #Cluster Id must match the cluster ID of the running NATS Streaming cluster which is configured in the server conf files
       NATS_URL: "nats://nats-streaming-1:4222,nats://nats-streaming-2:4222,nats://nats-streaming-3:4222"
       SOURCE_CHANNEL_NAME: "transformed-event"
       DURABLE_ENABLE: "false" # disable durable subscription since the aggregator relies on external relational database to maintain reading position on source stream

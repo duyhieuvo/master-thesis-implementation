@@ -4,6 +4,8 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
 
+//Entity of the current reading position on the source stream.
+//The key is the partition (in case of NATS Streaming is -1 since a NATS channel cannot be partitioned)
 @Entity
 @Table
 public class CurrentReadingPosition {

@@ -26,6 +26,7 @@ public class NATSStreamProcessor {
         counter = 0;
         lastProcessedMessage = -1L;
 
+        //Create a subscription on the "raw-event" channel with the message handler to transform and publish new transformed events
         Subscription streamProcessorSubscription = NATSClientsCreator.subscribeToChannel(natsClient,Configuration.SOURCE_CHANNEL_NAME,transformRawEvent(),Configuration.START_POSITION);
     }
 
@@ -34,7 +35,7 @@ public class NATSStreamProcessor {
         return new MessageHandler() {
             @Override
             public void onMessage(Message message) {
-                //Client cannot be ensured whether the server receive the last acknowledgement since there is no direct connection between client and server
+                //Client cannot be ensured whether the server receive the last acknowledgement since there is no direct TCP connection between client and server
                 //In case acknowledgment is lost, server will resend the last acknowledged message
                 //In this case, client must maintain the sequence ID of last processed message and discard it and acknowledge again with the server to receive new message
                 if(message.getSequence()<=lastProcessedMessage){
@@ -52,6 +53,8 @@ public class NATSStreamProcessor {
                 String customerId;
                 JsonNode jsonNode = null;
                 try{
+
+                    //Transform raw event
                     jsonNode = objectMapper.readTree(new String(message.getData()));
                     value = Float.valueOf(jsonNode.get("value").asText());
                     type = jsonNode.get("type").asText();
@@ -64,13 +67,19 @@ public class NATSStreamProcessor {
                     transformedRecord.put("customer",customerId);
                     transformedRecord.put("value", value);
                     String transformedRecordString= objectMapper.writeValueAsString(transformedRecord);
+
+                    //Publish the transformed event with retry logic
                     PublishingUtils.publishWithRetry(natsClient, Configuration.SINK_CHANNEL_NAME,transformedRecordString.getBytes(),5);
                     System.out.println("Published the transformed event: " + transformedRecordString);
 
+                    //Add the Byteman hook here to simulate the application crash
                     bytemanHook(counter);
 
+                    //Acknowledge successful consumption of the message with the server
                     message.ack();
                     System.out.println("Acknowledge the consumption of message with server.");
+
+                    //Store the sequence number of the last processed message to drop it if the server resend it
                     lastProcessedMessage = message.getSequence();
                     counter++;
 

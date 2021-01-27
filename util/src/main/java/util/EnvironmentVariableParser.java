@@ -1,5 +1,6 @@
 package util;
 
+//Helper class to parse environment variable
 public class EnvironmentVariableParser {
     public static Object getEnvironmentVariables(String envName, Object defaultValue) {
         Object result = null;

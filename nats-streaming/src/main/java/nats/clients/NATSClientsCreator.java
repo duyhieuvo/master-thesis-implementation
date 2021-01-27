@@ -8,6 +8,9 @@ import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 
 public class NATSClientsCreator {
+
+    //Creator of NATS streaming connection.
+    //Once a streaming connection created, it can be used to publish messages or multiple subscriptions can be created on top of it
     public static StreamingConnection createStreamingConnection() {
         StreamingConnection con = null;
         Options options = new Options.Builder()
@@ -26,6 +29,10 @@ public class NATSClientsCreator {
         return con;
     }
 
+    //Create subscription on the streaming connection. The subscription can be durable or non-durable based on the the environment variable DURABLE_ENABLE
+    //A message handler must be given to asynchronously receive and process whenever a message is pushed to the client
+    //Start position of the subscrition must also be specified: 0: from the first message on the channel, -1: from the last message on the channel (include also the last message), other long positive value: from the message with the matched sequence id on the channel
+    //Users can also specify start position based on time with NATS Streaming. Nevertheless, for demo implementation, this option is neglected for simplicity
     public static Subscription subscribeToChannel(StreamingConnection streamingConnection, String channelName, MessageHandler messageHandler, Long start_position){
         Subscription subscription = null;
         try{

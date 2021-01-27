@@ -22,10 +22,11 @@ public class NATSEventsGenerator implements EventsPublisher {
         objectMapper = new ObjectMapper();
         counter = 0;
         lastPublishedMessage= 0;
-        //Get the last published message
+
+        //Create a subscription on the "reading-position" channel to get the line number of the last published event in the source CSV file
         Subscription subscriptionForLastPublisedMessage= NATSClientsCreator.subscribeToChannel(natsClient, Configuration.SOURCE_CHANNEL_NAME,getLastPublishedMessage(),Configuration.START_POSITION);
 
-        //Try to retrieve the position of last published message on the source file, block the class for 5 seconds.
+        //lock for 5 seconds to try to retrieve the position of last published reading position on the source file since the message handler of the subscription is executed in a separated thread
         long start = 0;
         float elapsed = 0;
         int wait = 5;
@@ -37,7 +38,7 @@ public class NATSEventsGenerator implements EventsPublisher {
             }
         }
 
-        //Unsubscribe to the reading position topic after getting the last published message
+        //Unsubscribe to the reading position topic after getting the last published reading position
         try {
             subscriptionForLastPublisedMessage.unsubscribe();
         } catch (IOException e) {
@@ -45,7 +46,7 @@ public class NATSEventsGenerator implements EventsPublisher {
         }
     }
 
-
+    //Message handler to get the last published reading position to use it to resume the event generator
     public MessageHandler getLastPublishedMessage(){
         return new MessageHandler() {
             @Override
@@ -70,13 +71,14 @@ public class NATSEventsGenerator implements EventsPublisher {
             String eventJson = objectMapper.writeValueAsString(event);
             String currentReadingPosition = event.get("id");
 
-            //Publish the event
+            //Publish the event with retry logic
             PublishingUtils.publishWithRetry(natsClient,Configuration.SINK_CHANNEL_NAME,eventJson.getBytes(),5);
             System.out.println("Published event: " + eventJson);
+
             //Add the Byteman hook here to simulate the application crash
             bytemanHook(counter);
 
-            //Publish the current reading position to the "reading_position" channel
+            //Publish the current reading position with retry logic to the "reading_position" channel
             PublishingUtils.publishWithRetry(natsClient,Configuration.SOURCE_CHANNEL_NAME,currentReadingPosition.getBytes(),5);
             System.out.println("Published reading position: " + currentReadingPosition);
             counter++;

@@ -1,4 +1,4 @@
-RULE Fault injection to the stream aggregator, simulate application crash during a transaction
+RULE Fault injection to the stream aggregator, simulate application crash during a transaction to snapshot the current balances and current reading position on source channel
 CLASS util.relationalDB.CurrentBalanceDAO
 METHOD bytemanHook(int)
 AT EXIT
