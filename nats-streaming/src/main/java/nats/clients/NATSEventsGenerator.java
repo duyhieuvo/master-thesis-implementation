@@ -26,16 +26,11 @@ public class NATSEventsGenerator implements EventsPublisher {
         //Create a subscription on the "reading-position" channel to get the line number of the last published event in the source CSV file
         Subscription subscriptionForLastPublisedMessage= NATSClientsCreator.subscribeToChannel(natsClient, Configuration.SOURCE_CHANNEL_NAME,getLastPublishedMessage(),Configuration.START_POSITION);
 
-        //lock for 5 seconds to try to retrieve the position of last published reading position on the source file since the message handler of the subscription is executed in a separated thread
-        long start = 0;
-        float elapsed = 0;
-        int wait = 5;
-        start = System.currentTimeMillis();
-        while(true){
-            elapsed= (System.currentTimeMillis()-start)/1000F;
-            if(elapsed>wait){
-                break;
-            }
+        //Pause the current thread for 5 seconds to try to retrieve the position of last published reading position on the source file since the message handler of the subscription is executed in a separated thread
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
 
         //Unsubscribe to the reading position topic after getting the last published reading position
