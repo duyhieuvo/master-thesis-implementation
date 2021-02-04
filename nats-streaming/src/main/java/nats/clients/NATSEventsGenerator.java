@@ -15,7 +15,7 @@ public class NATSEventsGenerator implements EventsPublisher {
     private StreamingConnection natsClient;
     private ObjectMapper objectMapper;
     private int counter;
-    private int lastPublishedMessage;
+    private volatile int lastPublishedMessage;
 
     public NATSEventsGenerator(){
         natsClient = NATSClientsCreator.createStreamingConnection();
