@@ -3,6 +3,7 @@ package kafka;
 import kafka.clients.KafkaAggregator;
 import kafka.clients.KafkaEventsGenerator;
 import kafka.clients.KafkaStreamProcessor;
+import kafka.clients.KafkaStreamProcessorNew;
 
 public class RunClient {
     public static void main(String[] args){
@@ -11,7 +12,7 @@ public class RunClient {
             kafkaEventsGenerator.generateEvents();
         }
         else if ("stream-processor".equals(args[0])){
-            KafkaStreamProcessor kafkaStreamProcessor = new KafkaStreamProcessor();
+            KafkaStreamProcessorNew kafkaStreamProcessor = new KafkaStreamProcessorNew();
             kafkaStreamProcessor.transformRawEvent();
         }
         else if("stream-aggregator".equals(args[0])){

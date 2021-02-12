@@ -1,5 +1,5 @@
 RULE Fault injection to the stream processor, simulate application crash during a transaction to published transformed event and commit the offset number of the processed raw event.
-CLASS kafka.clients.KafkaStreamProcessor
+CLASS kafka.clients.KafkaStreamProcessorNew
 METHOD bytemanHook(int)
 AT EXIT
 BIND counter = $1

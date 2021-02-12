@@ -21,6 +21,10 @@ import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 
+
+//This stream processor uses the old approach to fence off old instances when partition rebalance occurs
+//In this approach, a new producer instance must be created for each partition assigned to this consumer
+@Deprecated
 public class KafkaStreamProcessor {
     private Map<Integer,KafkaProducer<String,String>> producers;
     private KafkaConsumer<String,String> consumer;

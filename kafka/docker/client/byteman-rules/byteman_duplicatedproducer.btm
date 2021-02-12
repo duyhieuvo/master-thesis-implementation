@@ -1,5 +1,5 @@
 RULE Pause the stream processor instance to trigger auto partition rebalance by Kafka while there are still messages buffered on this processor instance. In this case, there are two instances which process the same messages
-CLASS kafka.clients.KafkaStreamProcessor
+CLASS kafka.clients.KafkaStreamProcessorNew
 METHOD bytemanHookPartitionRevoked(int)
 AT ENTRY
 BIND counter = $1

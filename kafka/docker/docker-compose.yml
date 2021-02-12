@@ -256,7 +256,7 @@ services:
       KAFKA_SOURCE_TOPIC: "raw-event"
       OFFSET_RESET: "earliest"
       MAX_POLL_RECORDS: 10
-      TRANSACTION_ID: "stream-processor-transaction"
+      TRANSACTION_ID: "stream-processor-transaction-1"
       PRODUCER_ID: "stream-processor-producer-1"
       KAFKA_SINK_TOPIC: "transformed-event"
 
@@ -275,7 +275,7 @@ services:
       KAFKA_SOURCE_TOPIC: "raw-event"
       OFFSET_RESET: "earliest"
       MAX_POLL_RECORDS: 10
-      TRANSACTION_ID: "stream-processor-transaction"
+      TRANSACTION_ID: "stream-processor-transaction-1"
       PRODUCER_ID: "stream-processor-producer-1"
       KAFKA_SINK_TOPIC: "transformed-event"
 
@@ -294,7 +294,7 @@ services:
       KAFKA_SOURCE_TOPIC: "raw-event"
       OFFSET_RESET: "earliest"
       MAX_POLL_RECORDS: 10
-      TRANSACTION_ID: "stream-processor-transaction"
+      TRANSACTION_ID: "stream-processor-transaction-2"
       PRODUCER_ID: "stream-processor-producer-1"
       KAFKA_SINK_TOPIC: "transformed-event"
 
