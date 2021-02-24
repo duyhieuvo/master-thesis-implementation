@@ -76,7 +76,7 @@ The current balances on the PostgreSQL database can be inspected from the web br
 
 The current balance of customers are available in table `currentbalance`
 
-image::./docs/images/current-balances.png[The current balances on PostgreSQL database]
+image::./docs/images/current-balances.PNG[The current balances on PostgreSQL database]
 
 The current reading position of the view generator on the source stream `transformed-event` is available in table `currentreadingposition`
 
