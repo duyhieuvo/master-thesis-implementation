@@ -5,6 +5,12 @@ This is a part of the Master Thesis for the High Integrity Systems course at the
 
 image::./docs/images/implementation-use-case-1.png[The overview of the use case]
 
+Prerequisite
+~~~~~~~~~~~~
+* Java 1.8 or higher
+* Maven
+* Git-bash (for Windows)
+
 
 Quickstart
 ~~~~~~~~~~
@@ -66,6 +72,8 @@ docker-compose build
 ./scenario-duplicated-producer.sh
 ----
 
+*Note:* Currently the scripts can only be executed directly on Windows machine from https://gitforwindows.org/[Git-Bash^] terminal. To execute on Linux machine, remove `winpty` from commands in the `setup.sh` script in the same folder.
+
 The current balances on the PostgreSQL database can be inspected from the web browser under: http://localhost:8081 with the following login info:
 
 * System: PostgreSQL
@@ -86,4 +94,3 @@ The current reading position of the view generator on the source stream `transfo
 docker-compose down
 ----
 
-*Note:* Currently the scripts can only be executed directly on Windows machine. To execute on Linux machine, remove `winpty` from commands in the `setup.sh` script in the same folder.
