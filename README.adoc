@@ -9,11 +9,12 @@ Prerequisite
 ~~~~~~~~~~~~
 * Java 1.8 or higher
 * Maven
-* Git-bash (for Windows)
+* Docker and Docker compose
 
 
 Quickstart
 ~~~~~~~~~~
+*Note:* For Windows machine, the showcase must be started using PowerShell.
 
 .Build the executable jar files from the root directory
 ----
@@ -48,31 +49,51 @@ docker-compose build
 ./scenario-no-failure.sh
 ----
 
-* Scenario with event generator crashes
+On Windows
+----
+.\scenario-no-failure.ps1
+----
 
+* Scenario with event generator crashes
 ----
 ./scenario-event-generator-crash.sh
 ----
 
-* Scenario with stream processor crashes
+On Windows
+----
+.\scenario-event-generator-crash.ps1
+----
 
+* Scenario with stream processor crashes
 ----
 ./scenario-stream-processor-crash.sh
 ----
 
-* Scenario with view generator crashes
-
+On Windows
 ----
-./scenario-stream-aggregator-crash.sh
+.\scenario-stream-processor-crash.ps1
+----
+
+* Scenario with view generator crashes
+----
+./scenario-view-generator-crash.sh
+----
+
+On Windows 
+----
+.\scenario-view-generator-crash.ps1
 ----
 
 * Scenario with two consumers in the same group have the same messages (only Kafka and Pulsar)
-
 ----
-./scenario-duplicated-producer.sh
+./scenario-duplicated-consumer.sh
 ----
 
-*Note:* Currently the scripts can only be executed directly on Windows machine from https://gitforwindows.org/[Git-Bash^] terminal. To execute on Linux machine, remove `winpty` from commands in the `setup.sh` script in the same folder.
+On Windows 
+----
+.\scenario-duplicated-consumer.ps1
+----
+
 
 The current balances on the PostgreSQL database can be inspected from the web browser under: http://localhost:8081 with the following login info:
 
@@ -82,7 +103,7 @@ The current balances on the PostgreSQL database can be inspected from the web br
 * Password: postgres
 * Database: exactly-once
 
-The current balance of customers are available in table `currentbalance`
+The current balance of customers are available in table `currentbalance`. In the table below are the current balances of users in case of no failure.
 
 image::./docs/images/current-balances.PNG[The current balances on PostgreSQL database]
 
