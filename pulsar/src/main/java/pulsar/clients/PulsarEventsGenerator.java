@@ -93,6 +93,11 @@ public class PulsarEventsGenerator implements EventsPublisher {
             //Commit the transaction
             txn.commit().get();
             counter++;
+            boolean isLastMessage = Integer.parseInt(event.get("id"))==1000;
+            if(isLastMessage){
+                System.out.println("All 1000 events have been published. Stop the event generator");
+                System.exit(0);
+            }
         } catch (IllegalArgumentException e){
                 e.printStackTrace();
         } catch (JsonProcessingException e) {

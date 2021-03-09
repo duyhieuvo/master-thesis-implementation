@@ -19,14 +19,14 @@ done
 echo "Brokers are now fully started"
 
 echo "Set the Bookkeeper quorum for the namespace"
-winpty docker exec cli bin/pulsar-admin namespaces set-persistence public/default --bookkeeper-ack-quorum 2 --bookkeeper-ensemble 3 --bookkeeper-write-quorum 3 --ml-mark-delete-max-rate 0
+docker exec cli bin/pulsar-admin namespaces set-persistence public/default --bookkeeper-ack-quorum 2 --bookkeeper-ensemble 3 --bookkeeper-write-quorum 3 --ml-mark-delete-max-rate 0
 echo "Set the retention period for messages on a topic to 1 week"
-winpty docker exec cli bin/pulsar-admin namespaces set-retention public/default --size -1 --time 1w
+docker exec cli bin/pulsar-admin namespaces set-retention public/default --size -1 --time 1w
 #echo "Enable message deduplication to allow idempotent producer"
-#winpty docker exec cli bin/pulsar-admin namespaces set-deduplication public/default --enable
+#docker exec cli bin/pulsar-admin namespaces set-deduplication public/default --enable
 
 echo "Create necessary topics"
-winpty docker exec cli bin/pulsar-admin topics create persistent://public/default/reading-position
-winpty docker exec cli bin/pulsar-admin topics create-partitioned-topic persistent://public/default/raw-event --partitions 2
-winpty docker exec cli bin/pulsar-admin topics create-partitioned-topic persistent://public/default/transformed-event --partitions 2
+docker exec cli bin/pulsar-admin topics create persistent://public/default/reading-position
+docker exec cli bin/pulsar-admin topics create-partitioned-topic persistent://public/default/raw-event --partitions 2
+docker exec cli bin/pulsar-admin topics create-partitioned-topic persistent://public/default/transformed-event --partitions 2
 

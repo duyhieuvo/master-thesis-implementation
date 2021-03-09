@@ -78,6 +78,12 @@ public class NATSEventsGenerator implements EventsPublisher {
             System.out.println("Published reading position: " + currentReadingPosition);
             counter++;
 
+            boolean isLastMessage = Integer.parseInt(event.get("id"))==1000;
+            if(isLastMessage){
+                System.out.println("All 1000 events have been published. Stop the event generator");
+                System.exit(0);
+            }
+
 
         } catch (JsonProcessingException e) {
             e.printStackTrace();

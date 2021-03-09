@@ -1,6 +1,4 @@
-#!/usr/bin/env bash
-
-./setup.sh
+.\setup.ps1
 
 docker-compose up event-generator
 docker-compose up stream-processor-1-crash

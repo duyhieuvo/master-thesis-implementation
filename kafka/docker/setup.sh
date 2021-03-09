@@ -14,9 +14,9 @@ done
 echo "Brokers are now fully started"
 
 echo "Create necessary topics"
-winpty docker exec cli kafka-topics --create --topic raw-event --bootstrap-server kafka:9092 --partitions 2 --replication-factor 3
-winpty docker exec cli kafka-topics --create --topic transformed-event --bootstrap-server kafka:9092 --partitions 2 --replication-factor 3
-winpty docker exec cli kafka-topics --create --topic reading-position --bootstrap-server kafka:9092 --partitions 1 --replication-factor 3
+docker exec cli kafka-topics --create --topic raw-event --bootstrap-server kafka:9092 --partitions 2 --replication-factor 3
+docker exec cli kafka-topics --create --topic transformed-event --bootstrap-server kafka:9092 --partitions 2 --replication-factor 3
+docker exec cli kafka-topics --create --topic reading-position --bootstrap-server kafka:9092 --partitions 1 --replication-factor 3
 
 echo "The created topics"
-winpty docker exec cli kafka-topics --describe --bootstrap-server kafka:9092
+docker exec cli kafka-topics --describe --bootstrap-server kafka:9092
