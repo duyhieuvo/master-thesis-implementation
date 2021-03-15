@@ -17,6 +17,8 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.OutOfOrderSequenceException;
 import org.apache.kafka.common.errors.ProducerFencedException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import util.eventsource.CSVSourceEvent;
 import util.eventsource.EventsPublisher;
 
@@ -32,6 +34,8 @@ public class KafkaEventsGenerator implements EventsPublisher {
     private ObjectMapper objectMapper;
     private ProducerRecord<String,String> record, currentReadingPosition;
     private int counter; //The counter variable for Byteman failure injection
+
+    static final Logger LOGGER = LoggerFactory.getLogger(KafkaEventsGenerator.class);
 
     public KafkaEventsGenerator(){
         producer = KafkaClientsCreator.createProducer();
@@ -88,7 +92,7 @@ public class KafkaEventsGenerator implements EventsPublisher {
             //Commit the transaction
             producer.commitTransaction();
             counter++;
-            System.out.println("Published event: " + eventJson);
+            LOGGER.info("Published event: " + eventJson);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {

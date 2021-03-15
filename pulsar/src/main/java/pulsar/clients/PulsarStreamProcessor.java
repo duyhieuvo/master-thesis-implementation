@@ -7,6 +7,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.pulsar.client.api.*;
 import org.apache.pulsar.client.api.transaction.Transaction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pulsar.configuration.Configuration;
 
 import java.util.concurrent.ExecutionException;
@@ -18,6 +20,8 @@ public class PulsarStreamProcessor {
     private Consumer<String> consumer;
     private ObjectMapper objectMapper;
     private int counter;
+    static final Logger LOGGER = LoggerFactory.getLogger(PulsarStreamProcessor.class);
+
 
     public PulsarStreamProcessor(){
         client = PulsarClientsCreator.createClient();
@@ -72,7 +76,7 @@ public class PulsarStreamProcessor {
                          .key(customerId)
                          .value(objectMapper.writeValueAsString(transformedRecord))
                          .send();
-                System.out.println("Publish transformed event: " + transformedRecord);
+                LOGGER.info("Publish transformed event: " + transformedRecord);
 
                 //Add the Byteman hook here to simulate the application crash during the transaction
                 bytemanHook(counter);
@@ -80,10 +84,10 @@ public class PulsarStreamProcessor {
                 //Acknowledge the consumption of message on input topic
                 consumer.acknowledgeAsync(message.getMessageId(),txn);
                 txn.commit().get();
-                System.out.println("Acknowledge input event");
+                LOGGER.info("Acknowledge input event");
 
             } catch (PulsarClientException e) {
-                e.printStackTrace();
+                LOGGER.error("Pulsar client exception",e);
             } catch (JsonMappingException e) {
                 e.printStackTrace();
             } catch (JsonProcessingException e) {

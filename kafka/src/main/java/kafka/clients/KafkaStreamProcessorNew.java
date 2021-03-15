@@ -16,6 +16,8 @@ import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.OutOfOrderSequenceException;
 import org.apache.kafka.common.errors.ProducerFencedException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.*;
@@ -27,6 +29,7 @@ public class KafkaStreamProcessorNew {
     private ObjectMapper objectMapper;
     private ProducerRecord<String,String> producerRecord;
     private int counter; //The counter variable for Byteman failure injection
+    static final Logger LOGGER = LoggerFactory.getLogger(KafkaStreamProcessorNew.class);
 
     public KafkaStreamProcessorNew(){
         producer = KafkaClientsCreator.createProducer();
@@ -35,14 +38,14 @@ public class KafkaStreamProcessorNew {
             @Override
             public void onPartitionsRevoked(Collection<TopicPartition> collection) {
                 for(TopicPartition topicPartition : collection){
-                    System.out.println("Partition revoked: " + topicPartition.partition());
+                    LOGGER.info("Partition revoked: " + topicPartition.partition());
                 }
 
             }
             @Override
             public void onPartitionsAssigned(Collection<TopicPartition> collection) {
                 for(TopicPartition topicPartition : collection){
-                    System.out.println("Partition assigned: " + topicPartition.partition());
+                    LOGGER.info("Partition assigned: " + topicPartition.partition());
                 }
             }
         });
@@ -70,7 +73,7 @@ public class KafkaStreamProcessorNew {
                 for (ConsumerRecord<String, String> consumerRecord : consumerRecords) {
                      producerRecord = processConsumedRecord(consumerRecord);
                     RecordMetadata recordMetadata=producer.send(producerRecord).get();
-                    System.out.println("Published event: "+ producerRecord.value());
+                    LOGGER.info("Published event: "+ producerRecord.value());
                     counter++;
                 }
                 //Add the Byteman hook here to simulate the application crash during the transaction
@@ -87,24 +90,25 @@ public class KafkaStreamProcessorNew {
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } catch (OutOfOrderSequenceException  e) { //This exception is throw when Kafka producer executes send() method and Kafka broker detects out-of-order messages caused by producer retrying sending a message
-                e.printStackTrace();
-                System.out.println("Unrecoverable exception is encountered, stop the application");
+//                e.printStackTrace();
+                LOGGER.error("Unrecoverable exception is encountered, stop the application",e);
                 producer.close();
                 System.exit(-1);
             } catch (ProducerFencedException  e) { //This exception is throw by producer methods: beginTransaction(), sendOffsetsToTransaction(), commitTransaction() when a new instance of producer with the same transactional id as this producer is registered with the Kafka broker
-                e.printStackTrace();
-                System.out.println("Unrecoverable exception is encountered, stop the application");
+//                e.printStackTrace();
+                LOGGER.error("Unrecoverable exception is encountered, stop the application",e);
                 producer.close();
                 System.exit(-1);
             }  catch (CommitFailedException e) { //This exception is thrown when sendOffsetsToTransaction() is executed with obsolete metadata of the consumer group
-                e.printStackTrace();
+//                e.printStackTrace();
+                LOGGER.error("Commit failed",e);
                 producer.abortTransaction();
             }  catch (KafkaException e) {
                 e.printStackTrace();
             } catch (ExecutionException e) { //This exception is thrown when the send() method returns an error
                 e.printStackTrace();
                 if(e.getCause() != null && e.getCause() instanceof ProducerFencedException){ //This nested exception is thrown when a new instance of producer with the same transactional id as this producer is registered with the Kafka broker
-                    System.out.println("Unrecoverable exception is encountered, stop the application");
+                    LOGGER.error("Unrecoverable exception is encountered, stop the application",e.getCause());
                     producer.close();
                     System.exit(-1);
                 }

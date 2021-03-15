@@ -10,6 +10,8 @@ import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.common.TopicPartition;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import util.relationalDB.CurrentBalanceDAO;
 import util.relationalDB.entity.CurrentBalance;
 import util.relationalDB.entity.CurrentReadingPosition;
@@ -24,6 +26,8 @@ public class KafkaAggregator {
     private CurrentBalanceDAO currentBalanceDAO;
     private Map<String,Float> customersBalances;
     private int counter; //The counter variable for Byteman failure injection
+    static final Logger LOGGER = LoggerFactory.getLogger(KafkaAggregator.class);
+
 
     public KafkaAggregator(){
         consumer = KafkaClientsCreator.createConsumer();
@@ -89,7 +93,7 @@ public class KafkaAggregator {
             //Send the current snapshot of the balance and current reading position of the processed batch of records to database
             currentBalanceDAO.updateListCustomerBalance(committedBalanceList,currentReadingPositionList,counter);
 
-            System.out.println("Published: " + committedBalanceList);
+            LOGGER.info("Published: " + committedBalanceList);
         }
 
     }

@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.pulsar.client.api.*;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pulsar.configuration.Configuration;
 import util.relationalDB.CurrentBalanceDAO;
 import util.relationalDB.entity.CurrentBalance;
@@ -26,6 +28,7 @@ public class PulsarAggregator {
     private CurrentBalanceDAO currentBalanceDAO;
     private Map<String,Float> customersBalances;
     private int counter;
+    static final Logger LOGGER = LoggerFactory.getLogger(PulsarAggregator.class);
 
     public PulsarAggregator() throws IOException {
         client = PulsarClientsCreator.createClient();
@@ -70,7 +73,7 @@ public class PulsarAggregator {
                         if (msg==null){
                             break;
                         }
-                        System.out.println(msg.getValue());
+                        LOGGER.debug(msg.getValue());
 
                         String sourcePartitionTopic = msg.getTopicName();
                         int sourcePartition = Integer.parseInt(sourcePartitionTopic.substring(sourcePartitionTopic.length()-1));
@@ -104,7 +107,7 @@ public class PulsarAggregator {
 
             //Send the current snapshot of the balance and current reading position of the processed batch of records to database
             currentBalanceDAO.updateListCustomerBalance(committedBalanceList,currentReadingPositionList,counter);
-            System.out.println("Published: " + committedBalanceList);
+            LOGGER.info("Published: " + committedBalanceList);
         }
     }
 }

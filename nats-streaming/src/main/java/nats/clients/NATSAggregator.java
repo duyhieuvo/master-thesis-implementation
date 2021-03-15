@@ -8,6 +8,8 @@ import io.nats.streaming.MessageHandler;
 import io.nats.streaming.StreamingConnection;
 import io.nats.streaming.Subscription;
 import nats.configuration.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import util.relationalDB.CurrentBalanceDAO;
 import util.relationalDB.entity.CurrentBalance;
 import util.relationalDB.entity.CurrentReadingPosition;
@@ -32,6 +34,9 @@ public class NATSAggregator {
     private long lastProcessedMessage;
 
     private final Object lock = new Object();
+
+    static final Logger LOGGER = LoggerFactory.getLogger(NATSAggregator.class);
+
 
     public NATSAggregator(){
         natsClient = NATSClientsCreator.createStreamingConnection();
@@ -79,7 +84,7 @@ public class NATSAggregator {
                         return;
                     }
                 }
-                System.out.println("Received event: " + new String(message.getData()));
+                LOGGER.debug("Received event: " + new String(message.getData()));
 
                 Map<String, CurrentBalance> committedBalanceList = new HashMap<>();
                 Map<Integer, CurrentReadingPosition> committedReadingPositionList = new HashMap<>();
@@ -105,6 +110,8 @@ public class NATSAggregator {
 
                     //Send the current snapshot of the balance and current reading position of the processed batch of records to database
                     currentBalanceDAO.updateListCustomerBalance(committedBalanceList,committedReadingPositionList,counter);
+                    LOGGER.info("Published: " + committedBalanceList);
+
 
                     //Store the sequence number of the last processed message to drop it if the server resend it
                     lastProcessedMessage = message.getSequence();

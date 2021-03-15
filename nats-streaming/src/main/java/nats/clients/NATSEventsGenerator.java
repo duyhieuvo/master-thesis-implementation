@@ -4,6 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.nats.streaming.*;
 import nats.configuration.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import util.eventsource.CSVSourceEvent;
 import util.eventsource.EventsPublisher;
 
@@ -16,6 +18,8 @@ public class NATSEventsGenerator implements EventsPublisher {
     private ObjectMapper objectMapper;
     private int counter;
     private volatile int lastPublishedMessage;
+    static final Logger LOGGER = LoggerFactory.getLogger(NATSEventsGenerator.class);
+
 
     public NATSEventsGenerator(){
         natsClient = NATSClientsCreator.createStreamingConnection();
@@ -68,19 +72,19 @@ public class NATSEventsGenerator implements EventsPublisher {
 
             //Publish the event with retry logic
             PublishingUtils.publishWithRetry(natsClient,Configuration.SINK_CHANNEL_NAME,eventJson.getBytes(),5);
-            System.out.println("Published event: " + eventJson);
+            LOGGER.info("Published event: " + eventJson);
 
             //Add the Byteman hook here to simulate the application crash
             bytemanHook(counter);
 
             //Publish the current reading position with retry logic to the "reading_position" channel
             PublishingUtils.publishWithRetry(natsClient,Configuration.SOURCE_CHANNEL_NAME,currentReadingPosition.getBytes(),5);
-            System.out.println("Published reading position: " + currentReadingPosition);
+            LOGGER.info("Published reading position: " + currentReadingPosition);
             counter++;
 
             boolean isLastMessage = Integer.parseInt(event.get("id"))==1000;
             if(isLastMessage){
-                System.out.println("All 1000 events have been published. Stop the event generator");
+                LOGGER.info("All 1000 events have been published. Stop the event generator");
                 System.exit(0);
             }
 

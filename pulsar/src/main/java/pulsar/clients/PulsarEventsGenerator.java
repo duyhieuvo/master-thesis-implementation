@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.pulsar.client.api.*;
 import org.apache.pulsar.client.api.transaction.Transaction;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pulsar.configuration.Configuration;
 import util.eventsource.CSVSourceEvent;
 import util.eventsource.EventsPublisher;
@@ -21,6 +23,7 @@ public class PulsarEventsGenerator implements EventsPublisher {
     private ObjectMapper objectMapper;
     private int counter; //The counter variable for Byteman failure injection
     private MessageId lastPublishedReadingPosition;
+    static final Logger LOGGER = LoggerFactory.getLogger(PulsarEventsGenerator.class);
 
     public PulsarEventsGenerator() {
         client = PulsarClientsCreator.createClient();
@@ -70,7 +73,7 @@ public class PulsarEventsGenerator implements EventsPublisher {
                     .key(customerId)
                     .value(eventJson)
                     .send();
-            System.out.println("Publish event: " + eventJson);
+            LOGGER.info("Publish event: " + eventJson);
 
             //Add the Byteman hook here to simulate the application crash during the transaction
             bytemanHook(counter);
@@ -79,7 +82,7 @@ public class PulsarEventsGenerator implements EventsPublisher {
             MessageId messageId = producerReadingPosition.newMessage(txn)
                     .value(event.get("id"))
                     .send();
-            System.out.println("Publish reading position: " + event.get("id"));
+            LOGGER.info("Publish reading position: " + event.get("id"));
 
             //Acknowledge message in the reading position up to the message before the newly published reading position
             //When the instance is restarted, its consumer will receive the first unacknowledged message on "reading-position" topic from Pulsar
@@ -95,7 +98,7 @@ public class PulsarEventsGenerator implements EventsPublisher {
             counter++;
             boolean isLastMessage = Integer.parseInt(event.get("id"))==1000;
             if(isLastMessage){
-                System.out.println("All 1000 events have been published. Stop the event generator");
+                LOGGER.info("All 1000 events have been published. Stop the event generator");
                 System.exit(0);
             }
         } catch (IllegalArgumentException e){

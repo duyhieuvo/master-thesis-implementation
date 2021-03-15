@@ -10,6 +10,8 @@ import io.nats.streaming.MessageHandler;
 import io.nats.streaming.StreamingConnection;
 import io.nats.streaming.Subscription;
 import nats.configuration.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
@@ -19,6 +21,8 @@ public class NATSStreamProcessor {
     private ObjectMapper objectMapper;
     private int counter;
     private long lastProcessedMessage;
+    static final Logger LOGGER = LoggerFactory.getLogger(NATSStreamProcessor.class);
+
 
     public NATSStreamProcessor(){
         natsClient = NATSClientsCreator.createStreamingConnection();
@@ -70,14 +74,14 @@ public class NATSStreamProcessor {
 
                     //Publish the transformed event with retry logic
                     PublishingUtils.publishWithRetry(natsClient, Configuration.SINK_CHANNEL_NAME,transformedRecordString.getBytes(),5);
-                    System.out.println("Published the transformed event: " + transformedRecordString);
+                    LOGGER.info("Published the transformed event: " + transformedRecordString);
 
                     //Add the Byteman hook here to simulate the application crash
                     bytemanHook(counter);
 
                     //Acknowledge successful consumption of the message with the server
                     message.ack();
-                    System.out.println("Acknowledge the consumption of message with server.");
+                    LOGGER.info("Acknowledge the consumption of message with server.");
 
                     //Store the sequence number of the last processed message to drop it if the server resend it
                     lastProcessedMessage = message.getSequence();
